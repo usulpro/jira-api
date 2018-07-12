@@ -1,0 +1,93 @@
+GET /rest/agile/1.0/epic/none/issue HTTP/1.1
+Host: skippdev.atlassian.net
+Accept: application/json
+Content-Type: application/json
+Authorization: Basic dXN1bHByb0BnbWFpbC5jb206NzllRVRENjgzV2Yya0U2eUtNYVAxRURG
+Cache-Control: no-cache
+
+### Все доски
+
+GET /rest/agile/1.0/board HTTP/1.1
+Host: skippdev.atlassian.net
+Accept: application/json
+Content-Type: application/json
+Authorization: Basic dXN1bHByb0BnbWFpbC5jb206NzllRVRENjgzV2Yya0U2eUtNYVAxRURG
+Cache-Control: no-cache
+
+### Одна доска
+
+GET /rest/agile/1.0/board/18 HTTP/1.1
+Host: skippdev.atlassian.net
+Accept: application/json
+Content-Type: application/json
+Authorization: Basic dXN1bHByb0BnbWFpbC5jb206NzllRVRENjgzV2Yya0U2eUtNYVAxRURG
+Cache-Control: no-cache
+
+### Все проекты, связанные с доской
+
+GET /rest/agile/1.0/board/18/project HTTP/1.1
+Host: skippdev.atlassian.net
+Accept: application/json
+Authorization: Basic dXN1bHByb0BnbWFpbC5jb206NzllRVRENjgzV2Yya0U2eUtNYVAxRURG
+Cache-Control: no-cache
+
+
+### Все issues без эпиков
+
+GET /rest/agile/1.0/board/18/epic/none/issue? HTTP/1.1
+Host: skippdev.atlassian.net
+Accept: application/json
+Authorization: Basic dXN1bHByb0BnbWFpbC5jb206NzllRVRENjgzV2Yya0U2eUtNYVAxRURG
+Cache-Control: no-cache
+
+
+### Все эпики
+
+GET /rest/agile/1.0/board/17/epic? HTTP/1.1
+Host: skippdev.atlassian.net
+Accept: application/json
+Authorization: Basic dXN1bHByb0BnbWFpbC5jb206NzllRVRENjgzV2Yya0U2eUtNYVAxRURG
+Cache-Control: no-cache
+
+
+### Все issues по эпику
+
+GET /rest/agile/1.0/board/17/epic/10122/issue? HTTP/1.1
+Host: skippdev.atlassian.net
+Accept: application/json
+Authorization: Basic dXN1bHByb0BnbWFpbC5jb206NzllRVRENjgzV2Yya0U2eUtNYVAxRURG
+Cache-Control: no-cache
+
+### backlog
+
+GET /rest/agile/1.0/board/17/backlog HTTP/1.1
+Host: skippdev.atlassian.net
+Accept: application/json
+Authorization: Basic dXN1bHByb0BnbWFpbC5jb206NzllRVRENjgzV2Yya0U2eUtNYVAxRURG
+Cache-Control: no-cache
+
+
+### Все проекты
+
+GET /rest/api/2/project HTTP/1.1
+Host: skippdev.atlassian.net
+Accept: application/json
+Authorization: Basic dXN1bHByb0BnbWFpbC5jb206NzllRVRENjgzV2Yya0U2eUtNYVAxRURG
+Cache-Control: no-cache
+
+### Информация о проекте
+
+GET /rest/api/2/project/10021 HTTP/1.1
+Host: skippdev.atlassian.net
+Accept: application/json
+Authorization: Basic dXN1bHByb0BnbWFpbC5jb206NzllRVRENjgzV2Yya0U2eUtNYVAxRURG
+Cache-Control: no-cache
+
+### Информация обо мне
+
+GET /rest/api/2/myself HTTP/1.1
+Host: skippdev.atlassian.net
+Accept: application/json
+Authorization: Basic dXN1bHByb0BnbWFpbC5jb206NzllRVRENjgzV2Yya0U2eUtNYVAxRURG
+Cache-Control: no-cache
+
