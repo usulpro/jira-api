@@ -1,8 +1,0 @@
-type apiPayload {
-  response: Json
-  status: String
-}
-
-extend type Query {
-  api(url: String): apiPayload
-}

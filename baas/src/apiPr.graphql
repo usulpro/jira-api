@@ -1,8 +1,0 @@
-type apiv2Payload {
-  response: String
-  status: String
-}
-
-extend type Query {
-  apiv2(url: String): apiv2Payload
-}
