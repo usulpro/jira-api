@@ -1,0 +1,22 @@
+types: ./types.graphql
+functions:
+  api:
+    type: resolver
+    schema: src/api.graphql
+    handler:
+      code: src/api.js
+  apiPr:
+    type: resolver
+    schema: src/apiPr.graphql
+    handler:
+      code: src/apiPr.js
+permissions:
+- operation: File.read
+- operation: File.create
+- operation: File.update
+- operation: File.delete
+- operation: User.read
+- operation: User.create
+- operation: User.update
+- operation: User.delete
+rootTokens: []
