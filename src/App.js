@@ -138,7 +138,7 @@ class App extends Component {
                 >
                   <h5 style={{ margin: 8 }}>
                     {`${issue.fields.summary}  [id: ${issue.id}]`}
-                    {`Оценка: ${Math.round(this.findEstimate(issue.id)/60/60)} `}
+                    {`Оценка: ${Math.round(this.findEstimate(issue.id)/60/60)} ч`}
                     {addEstimation(this.findEstimate(issue.id) || 0)}
                     <button
                       onClick={this.updIssue(issue.id)}
@@ -161,7 +161,7 @@ class App extends Component {
                           {`${task.fields.summary} ${task.fields.description ||
                             ''} [id: ${task.id}]`}
                           {storeId(task.id, issue.id)}
-                          {`Оценка: ${Math.round(this.findEstimate(task.id))} `}
+                          {`Оценка: ${Math.round(this.findEstimate(task.id)/60/60)} ч`}
                           {addEstimation(this.findEstimate(task.id) || 0)}
                           <button
                             onClick={this.updIssue(task.id)}
