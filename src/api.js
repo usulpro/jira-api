@@ -1,8 +1,7 @@
-import {  GraphQLClient } from 'graphql-request';
+import { GraphQLClient } from 'graphql-request';
 
 const endpoint = 'https://api.graph.cool/simple/v1/cjjitqtxu10pn0118qlejvj0y';
 const client = new GraphQLClient(endpoint, { headers: {} });
-
 
 const query = `
   query get($url: String){
@@ -13,6 +12,11 @@ const query = `
   }
   `;
 
+let logRequestFn = () => {};
+export const onProxiRequest = cb => {
+  logRequestFn = cb;
+};
+
 export const proxiRequest = url => {
   return client
     .request(query, { url })
@@ -22,6 +26,11 @@ export const proxiRequest = url => {
     .then(response => {
       try {
         const data = JSON.parse(response);
+        logRequestFn({
+          url,
+          status: 'Ok',
+          time: 0,
+        });
         return data;
       } catch (error) {
         return {
@@ -43,26 +52,39 @@ export const getAllBoards = async () => {
     ...board.location,
     boardId: board.id,
   }));
-  console.log('​exportgetAllBoards -> boards, projects', boards, projects);
+  // console.log('​exportgetAllBoards -> boards, projects', boards, projects);
   return { boards, projects };
 };
 
-// /rest/agile/1.0/board/17/epic?
 export const getBoardEpics = boardId =>
-  proxiRequest(`/rest/agile/1.0/board/${boardId}/epic?`).then(res => res.values);
+  proxiRequest(`/rest/agile/1.0/board/${boardId}/epic?`).then(
+    res => res.values
+  );
 
-
-// /rest/agile/1.0/board/17/epic?
 export const getEpicIssues = (boardId, epicId) =>
-  proxiRequest(`/rest/agile/1.0/board/${boardId}/epic/${epicId}/issue?`).then(res => res.issues);
+  proxiRequest(`/rest/agile/1.0/board/${boardId}/epic/${epicId}/issue?`).then(
+    res => res.issues
+  );
+
+export const getBoardIssues = boardId =>
+  proxiRequest(`/rest/agile/1.0/board/${boardId}/issue?`).then(
+    res => res.issues
+  );
 
 // /rest/agile/1.0/board/17/epic?
-export const getBacklog = (boardId) =>
-  proxiRequest(`/rest/agile/1.0/board/${boardId}/backlog`).then(res => res.issues);
-
+export const getBacklog = boardId =>
+  proxiRequest(`/rest/agile/1.0/board/${boardId}/backlog`).then(
+    res => res.issues
+  );
 
 // /rest/agile/1.0/board/17/epic?
 export const getNoEpicIssues = boardId =>
-  proxiRequest(`/rest/agile/1.0/board/${boardId}/epic/none/issue?`).then(res => res.values);
+  proxiRequest(`/rest/agile/1.0/board/${boardId}/epic/none/issue?`).then(
+    res => res.values
+  );
 
-export const getIssue = issueId => proxiRequest(`/rest/agile/1.0/issue/${issueId}`)
+export const getIssue = issueId =>
+  proxiRequest(`/rest/agile/1.0/issue/${issueId}`);
+
+export const getProject = projId =>
+  proxiRequest(`/rest/api/2/project/${projId}`);

@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import SplitPane from 'react-split-pane';
 import './App.css';
 import {
   getBoard,
@@ -9,9 +10,12 @@ import {
   getNoEpicIssues,
   getBacklog,
   getIssue,
+  onProxiRequest,
 } from './api';
 
 import { fetchInitData } from './store';
+
+onProxiRequest(console.log);
 
 class App extends Component {
   state = {
@@ -25,8 +29,19 @@ class App extends Component {
 
   async componentDidMount() {
     // const { boards, projects } = await getAllBoards();
-    // this.setState({ boards, projects, status: 'ready' });
-    fetchInitData();
+    const {
+      boardsCollection,
+      projectsCollection,
+      epicsCollection,
+      issuesCollection,
+    } = await fetchInitData();
+
+    console.log(
+      '​App -> asynccomponentDidMount -> projectsCollection',
+      projectsCollection
+    );
+
+    this.setState({ projects: projectsCollection, status: 'ready' });
   }
 
   updIssue = issueId => async ev => {
@@ -229,44 +244,65 @@ class App extends Component {
     );
   };
 
+  renderTitle = () => {
+    const { status } = this.state;
+    return (
+      <header className="App-header">
+        <h2 className="App-title">Welcome to Skipp API</h2>
+        <p className="App-status">{status}</p>
+        <input className="App-search" type="text" placeholder="search..." />
+      </header>
+    );
+  };
+
+  renderProjects = () => (
+    <div
+      className="contaner-vert"
+    >
+      {this.state.projects &&
+        this.state.projects.map(proj => (
+          <button
+            key={proj.projectId}
+            onClick={this.getBoard(proj.boardId)}
+            style={{
+              margin: 8,
+              border: 'solid 1px rgb(50,50,50)',
+              borderRadius: 4,
+              fontSize: 12,
+              width: 150,
+              padding: 4,
+              cursor: 'pointer',
+            }}
+          >
+            <img
+              src={`https://skippdev.atlassian.net${proj.avatarURI}`}
+              alt="ava"
+              style={{ width: 50 }}
+            />
+            <div>{proj.name}</div>
+          </button>
+        ))}
+    </div>
+  );
+
+  renderLayout = (renderProjects) => {
+    return (
+      <SplitPane split="vertical" minSize={150} defaultSize={300} style={{position: 'relative'}}>
+        <div className="panel-vert">
+        {this.renderProjects()}
+
+        </div>
+        <div>Right pane</div>
+      </SplitPane>
+    );
+  };
+
   render() {
     return (
       <div className="App">
-        <header className="App-header">
-          <h2 className="App-title">Welcome to Skipp API</h2>
-        </header>
-        <p className="App-intro">{this.state.status}</p>
+        {this.renderTitle()}
+        {this.renderLayout()}
 
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-          }}
-        >
-          {this.state.projects &&
-            this.state.projects.map(proj => (
-              <button
-                key={proj.projectId}
-                onClick={this.getBoard(proj.boardId)}
-                style={{
-                  margin: 8,
-                  border: 'solid 1px rgb(50,50,50)',
-                  borderRadius: 4,
-                  fontSize: 12,
-                  width: 150,
-                  padding: 4,
-                  cursor: 'pointer',
-                }}
-              >
-                <img
-                  src={`https://skippdev.atlassian.net${proj.avatarURI}`}
-                  alt="ava"
-                  style={{ width: 50 }}
-                />
-                <div>{proj.name}</div>
-              </button>
-            ))}
-        </div>
         {(this.state.epics &&
           !!this.state.epics.length && (
             <div>

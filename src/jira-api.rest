@@ -58,6 +58,14 @@ Accept: application/json
 Authorization: Basic dXN1bHByb0BnbWFpbC5jb206NzllRVRENjgzV2Yya0U2eUtNYVAxRURG
 Cache-Control: no-cache
 
+### Все issues
+
+GET /rest/agile/1.0/board/17/issue? HTTP/1.1
+Host: skippdev.atlassian.net
+Accept: application/json
+Authorization: Basic dXN1bHByb0BnbWFpbC5jb206NzllRVRENjgzV2Yya0U2eUtNYVAxRURG
+Cache-Control: no-cache
+
 ### backlog
 
 GET /rest/agile/1.0/board/17/backlog HTTP/1.1
@@ -118,7 +126,7 @@ Cache-Control: no-cache
 
 
 
-### estimation
+### user info
 GET /rest/api/2/user?username=pv4pv4 HTTP/1.1
 Host: skippdev.atlassian.net
 Accept: application/json

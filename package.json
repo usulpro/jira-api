@@ -7,7 +7,9 @@
     "graphql-request": "^1.6.0",
     "react": "^16.4.1",
     "react-dom": "^16.4.1",
-    "react-scripts": "1.1.4"
+    "react-inspector": "^2.3.0",
+    "react-scripts": "1.1.4",
+    "react-split-pane": "^0.1.82"
   },
   "scripts": {
     "start": "react-scripts start",
