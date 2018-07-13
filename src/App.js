@@ -11,6 +11,8 @@ import {
   getIssue,
 } from './api';
 
+import { fetchInitData } from './store';
+
 class App extends Component {
   state = {
     boards: null,
@@ -20,9 +22,11 @@ class App extends Component {
     status: 'loading...',
   };
   issuesIdList = [];
+
   async componentDidMount() {
-    const { boards, projects } = await getAllBoards();
-    this.setState({ boards, projects, status: 'ready' });
+    // const { boards, projects } = await getAllBoards();
+    // this.setState({ boards, projects, status: 'ready' });
+    fetchInitData();
   }
 
   updIssue = issueId => async ev => {
@@ -229,16 +233,10 @@ class App extends Component {
     return (
       <div className="App">
         <header className="App-header">
-          <h2 className="App-title">Welcome to Jira API</h2>
+          <h2 className="App-title">Welcome to Skipp API</h2>
         </header>
         <p className="App-intro">{this.state.status}</p>
-        {/* <button
-          // onClick={() => proxiRequest('/rest/api/2/project')}
-          onClick={() => proxiRequest('/rest/agile/1.0/board')}
-        >
-          proxiRequest
-        </button>
-        <button onClick={() => getAllBoards()}>getBoard</button> */}
+
         <div
           style={{
             display: 'flex',
