@@ -93,9 +93,14 @@ class App extends Component {
     const issue = this.issuesIdList.find(v => v.issueId === issueId);
     // console.log('​findEstimate -> issueId', issueId, issue);
 
-    // if (issue && issue.estimate === 0) {
-    //   return issue.estimate;
-    // }
+    if (issue && !issue.parentId) {
+      const subtasks = this.issuesIdList.filter(v => v.parentId === issueId);
+      const sum = subtasks.reduce(
+        (sm, sbTask) => sm + (sbTask.estimate || 0),
+        0
+      );
+      return sum;
+    }
     if (issue && issue.estimate) {
       return issue.estimate;
     }
@@ -163,7 +168,7 @@ class App extends Component {
                     {`Оценка: ${Math.round(
                       this.findEstimate(issue.id) / 60 / 60
                     )} ч`}
-                    {addEstimation(this.findEstimate(issue.id) || 0)}
+                    {/* {addEstimation(this.findEstimate(issue.id) || 0)} */}
                     {storeId(issue.id)}
                   </h5>
                   {issue.fields.subtasks.length ? (
