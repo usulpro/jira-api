@@ -8,6 +8,7 @@ import {
   getEpicIssues,
   getNoEpicIssues,
   getBacklog,
+  getIssue,
 } from './api';
 
 class App extends Component {
@@ -18,10 +19,29 @@ class App extends Component {
     backlog: null,
     status: 'loading...',
   };
+  issuesIdList = [];
   async componentDidMount() {
     const { boards, projects } = await getAllBoards();
     this.setState({ boards, projects, status: 'ready' });
   }
+
+  updIssue = issueId => async ev => {
+    const issue = await getIssue(issueId);
+    console.log('​App -> issue', issue);
+  };
+
+  fetchEstimates = () => {
+    if (!this.issuesIdList.length) return;
+    this.issuesIdList.forEach(issue => {
+      this.setState({ status: `fetching for ${issue.issueId}` }, async () => {
+        const issueData = await getIssue(issue.issueId);
+        const estimate = issueData.fields.timetracking.originalEstimateSeconds;
+        issue.estimate = estimate;
+        this.setState({ status: `fetched for id:${issue.issueId}` });
+        console.log('​App -> fetchEstimates -> estimate', issue);
+      });
+    });
+  };
 
   getIssues = async boardId => {
     this.setState({ status: 'loading issues...' }, async () => {
@@ -49,15 +69,134 @@ class App extends Component {
   };
 
   getBoard = id => async () => {
-    this.setState({ status: 'loading epics...' }, async () => {
-      // const board = await getBoard(id);
-      const epics = await getBoardEpics(id);
+    // this.issuesIdList = [];
+    this.setState(
+      {
+        status: 'loading epics...',
+        epics: null,
+        backlog: null,
+      },
+      async () => {
+        console.clear();
+        // const board = await getBoard(id);
+        const epics = await getBoardEpics(id);
 
-      this.setState({ epics, status: 'ready' });
-      console.log('​App -> board', epics);
-      if (epics.length) await this.getIssues(id);
-      await this.getBacklog(id);
-    });
+        this.setState({ epics, status: 'ready' });
+        console.log('​App -> board', epics);
+        if (epics.length) await this.getIssues(id);
+        await this.getBacklog(id);
+      }
+    );
+  };
+
+  findEstimate = issueId => {
+    const issue = this.issuesIdList.find(v => v.issueId === issueId);
+    // console.log('​findEstimate -> issueId', issueId, issue);
+    if (issue && issue.estimate) return issue.estimate;
+    return null;
+  };
+
+  renderIssues = issues => {
+    const epic = {
+      issues,
+      estimate: 0,
+    };
+    const addEstimation = est => {
+      epic.estimate = epic.estimate + est;
+      return null;
+    };
+
+    const storeId = (issueId, parentId) => {
+      const ind = this.issuesIdList.findIndex(v => v.issueId === issueId);
+      if (ind >= 0) {
+        // this.issuesIdList[ind] = { issueId, estimate: 0, parentId };
+        return null;
+      }
+      this.issuesIdList.push({ issueId, estimate: 0, parentId });
+      return null;
+    };
+
+    return (
+      <div>
+        {epic.issues && epic.issues.length ? (
+          <div>
+            <i>issues:</i>
+            <div>
+              {epic.issues.map(issue => (
+                <div
+                  style={{
+                    border: '1px solid rgb(150, 150, 150)',
+                    borderRadius: 2,
+                    padding: 4,
+                    margin: 2,
+                    width: 'auto',
+                    cursor: 'pointer',
+                  }}
+                  title="console.log"
+                  onClick={() => console.log(issue)}
+                  key={issue.id}
+                >
+                  <h5 style={{ margin: 8 }}>
+                    {`${issue.fields.summary}  [id: ${issue.id}]`}
+                    {`Оценка: ${Math.round(this.findEstimate(issue.id)/60/60)} `}
+                    {addEstimation(this.findEstimate(issue.id) || 0)}
+                    <button
+                      onClick={this.updIssue(issue.id)}
+                      style={{
+                        margin: 4,
+                        fontSize: 10,
+                      }}
+                    >
+                      ?
+                    </button>
+                    {storeId(issue.id)}
+                  </h5>
+                  {issue.fields.description && (
+                    <small>{issue.fields.description}</small>
+                  )}
+                  {issue.fields.subtasks.length ? (
+                    <div style={{ marginLeft: 50, fontSize: 12 }}>
+                      {issue.fields.subtasks.map(task => (
+                        <div key={task.id}>
+                          {`${task.fields.summary} ${task.fields.description ||
+                            ''} [id: ${task.id}]`}
+                          {storeId(task.id, issue.id)}
+                          {`Оценка: ${Math.round(this.findEstimate(task.id))} `}
+                          {addEstimation(this.findEstimate(task.id) || 0)}
+                          <button
+                            onClick={this.updIssue(task.id)}
+                            style={{
+                              margin: 4,
+                              fontSize: 10,
+                            }}
+                          >
+                            ?
+                          </button>
+
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+            <div
+              style={{
+                border: '1px solid rgb(50,50,50)',
+                borderRadius: 4,
+                padding: 16,
+                backgroundColor: 'rgb(200,250,200)',
+              }}
+            >
+              <h4>Суммарная оценка по разделу:</h4>
+              <p>
+                {`${Math.round((100 * epic.estimate) / 60 / 60) / 100} часов`}
+              </p>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
   };
 
   render() {
@@ -67,13 +206,13 @@ class App extends Component {
           <h2 className="App-title">Welcome to Jira API</h2>
         </header>
         <p className="App-intro">{this.state.status}</p>
-        <button
+        {/* <button
           // onClick={() => proxiRequest('/rest/api/2/project')}
           onClick={() => proxiRequest('/rest/agile/1.0/board')}
         >
           proxiRequest
         </button>
-        <button onClick={() => getAllBoards()}>getBoard</button>
+        <button onClick={() => getAllBoards()}>getBoard</button> */}
         <div
           style={{
             display: 'flex',
@@ -83,7 +222,7 @@ class App extends Component {
           {this.state.projects &&
             this.state.projects.map(proj => (
               <button
-                key={proj.id}
+                key={proj.projectId}
                 onClick={this.getBoard(proj.boardId)}
                 style={{
                   margin: 8,
@@ -107,60 +246,27 @@ class App extends Component {
         {(this.state.epics &&
           !!this.state.epics.length && (
             <div>
-              <h3>Эпики:</h3>
+              <h3>Epics:</h3>
+              {true ? (
+                <button onClick={this.fetchEstimates}>Запрос оценок</button>
+              ) : null}
               <ul>
                 {this.state.epics.map(epic => (
                   <li key={epic.id} style={{ textAlign: 'left' }}>
                     <h4>{epic.name || epic.summary || `id: ${epic.id}`}</h4>
-                    {epic.issues && epic.issues.length ? (
-                      <div>
-                        <i>issues:</i>
-                        <div>
-                          {epic.issues.map(issue => (
-                            <div
-                              style={{
-                                border: '1px solid rgb(150, 150, 150)',
-                                borderRadius: 2,
-                                padding: 4,
-                                margin: 2,
-                                width: 'auto',
-                                cursor: 'pointer'
-                              }}
-                              title="console.log"
-                              onClick={() => console.log(issue)}
-                            >
-                              <h5 style={{margin: 8}}>
-                                {`${issue.fields.summary} ${issue.fields
-                                  .description || ''} [id: ${issue.id}]`}
-                              </h5>
-                              {issue.fields.timetracking &&
-                              Object.keys(issue.fields.timetracking).length ? (
-                                <span>
-                                  {JSON.stringify(issue.fields.timetracking)}
-                                </span>
-                              ) : null}
-                              {issue.fields.subtasks.length ? (
-                                <div style={{ marginLeft: 50, fontSize: 12 }}>
-                                  {issue.fields.subtasks.map(task => (
-                                    <div key={task.id}>{`${
-                                      task.fields.summary
-                                    } ${task.fields.description || ''} [id: ${
-                                      task.id
-                                    }]`}</div>
-                                  ))}
-                                </div>
-                              ) : null}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
+                    {this.renderIssues(epic.issues)}
                   </li>
                 ))}
               </ul>
             </div>
           )) ||
           null}
+        {this.state.backlog && !!this.state.backlog.length ? (
+          <div style={{ textAlign: 'left' }}>
+            <h3>Backlog:</h3>
+            {this.renderIssues(this.state.backlog)}
+          </div>
+        ) : null}
       </div>
     );
   }

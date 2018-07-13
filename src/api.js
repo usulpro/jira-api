@@ -58,10 +58,11 @@ export const getEpicIssues = (boardId, epicId) =>
 
 // /rest/agile/1.0/board/17/epic?
 export const getBacklog = (boardId) =>
-  proxiRequest(`/rest/agile/1.0/board/17/backlog`).then(res => res.issues);
+  proxiRequest(`/rest/agile/1.0/board/${boardId}/backlog`).then(res => res.issues);
 
 
 // /rest/agile/1.0/board/17/epic?
 export const getNoEpicIssues = boardId =>
   proxiRequest(`/rest/agile/1.0/board/${boardId}/epic/none/issue?`).then(res => res.values);
 
+export const getIssue = issueId => proxiRequest(`/rest/agile/1.0/issue/${issueId}`)
