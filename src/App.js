@@ -42,12 +42,9 @@ class App extends Component {
 
   getBacklog = async boardId => {
     this.setState({ status: 'loading backlog...' }, async () => {
-
-          const backlog = await getBacklog(boardId);
-          console.log('​backlog', backlog);
-          this.setState({ backlog, status: 'ready' });
-
-
+      const backlog = await getBacklog(boardId);
+      console.log('​backlog', backlog);
+      this.setState({ backlog, status: 'ready' });
     });
   };
 
@@ -117,7 +114,7 @@ class App extends Component {
                     <h4>{epic.name || epic.summary || `id: ${epic.id}`}</h4>
                     {epic.issues && epic.issues.length ? (
                       <div>
-                        <h5>issues:</h5>
+                        <i>issues:</i>
                         <div>
                           {epic.issues.map(issue => (
                             <div
@@ -127,14 +124,29 @@ class App extends Component {
                                 padding: 4,
                                 margin: 2,
                                 width: 'auto',
+                                cursor: 'pointer'
                               }}
+                              title="console.log"
                               onClick={() => console.log(issue)}
                             >
-                              {`${issue.fields.summary} ${issue.fields.description || ''}`}
+                              <h5 style={{margin: 8}}>
+                                {`${issue.fields.summary} ${issue.fields
+                                  .description || ''} [id: ${issue.id}]`}
+                              </h5>
+                              {issue.fields.timetracking &&
+                              Object.keys(issue.fields.timetracking).length ? (
+                                <span>
+                                  {JSON.stringify(issue.fields.timetracking)}
+                                </span>
+                              ) : null}
                               {issue.fields.subtasks.length ? (
                                 <div style={{ marginLeft: 50, fontSize: 12 }}>
                                   {issue.fields.subtasks.map(task => (
-                                    <div key={task.id}>{`${task.fields.summary} ${task.fields.description || ''}`}</div>
+                                    <div key={task.id}>{`${
+                                      task.fields.summary
+                                    } ${task.fields.description || ''} [id: ${
+                                      task.id
+                                    }]`}</div>
                                   ))}
                                 </div>
                               ) : null}
