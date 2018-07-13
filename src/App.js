@@ -138,7 +138,20 @@ class App extends Component {
                 >
                   <h5 style={{ margin: 8 }}>
                     {`${issue.fields.summary}  [id: ${issue.id}]`}
-                    {`Оценка: ${Math.round(this.findEstimate(issue.id)/60/60)} ч`}
+                    <span
+                      style={{
+                        backgroundColor: 'rgb(200,200,200)',
+                        color: 'rgb(50,50,50,)',
+                        fontWeight: 400,
+                        margin: 8,
+                        padding: 6,
+                      }}
+                    >
+                      {issue.key}
+                    </span>
+                    {`Оценка: ${Math.round(
+                      this.findEstimate(issue.id) / 60 / 60
+                    )} ч`}
                     {addEstimation(this.findEstimate(issue.id) || 0)}
                     <button
                       onClick={this.updIssue(issue.id)}
@@ -161,7 +174,20 @@ class App extends Component {
                           {`${task.fields.summary} ${task.fields.description ||
                             ''} [id: ${task.id}]`}
                           {storeId(task.id, issue.id)}
-                          {`Оценка: ${Math.round(this.findEstimate(task.id)/60/60)} ч`}
+                          <span
+                            style={{
+                              backgroundColor: 'rgb(200,200,200)',
+                              color: 'rgb(50,50,50,)',
+                              fontWeight: 400,
+                              margin: 3,
+                              padding: 2,
+                            }}
+                          >
+                            {task.key}
+                          </span>
+                          {`Оценка: ${Math.round(
+                            this.findEstimate(task.id) / 60 / 60
+                          )} ч`}
                           {addEstimation(this.findEstimate(task.id) || 0)}
                           <button
                             onClick={this.updIssue(task.id)}
@@ -172,7 +198,6 @@ class App extends Component {
                           >
                             ?
                           </button>
-
                         </div>
                       ))}
                     </div>
