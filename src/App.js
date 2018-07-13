@@ -92,7 +92,13 @@ class App extends Component {
   findEstimate = issueId => {
     const issue = this.issuesIdList.find(v => v.issueId === issueId);
     // console.log('​findEstimate -> issueId', issueId, issue);
-    if (issue && issue.estimate) return issue.estimate;
+
+    // if (issue && issue.estimate === 0) {
+    //   return issue.estimate;
+    // }
+    if (issue && issue.estimate) {
+      return issue.estimate;
+    }
     return null;
   };
 
@@ -130,14 +136,19 @@ class App extends Component {
                     padding: 4,
                     margin: 2,
                     width: 'auto',
-                    cursor: 'pointer',
                   }}
                   title="console.log"
-                  onClick={() => console.log(issue)}
                   key={issue.id}
                 >
                   <h5 style={{ margin: 8 }}>
-                    {`${issue.fields.summary}  [id: ${issue.id}]`}
+                    <a
+                      href={`https://skippdev.atlassian.net/browse/${
+                        issue.key
+                      }`}
+                      target="blank"
+                    >
+                      {`${issue.fields.summary}  [id: ${issue.id}]`}
+                    </a>
                     <span
                       style={{
                         backgroundColor: 'rgb(200,200,200)',
@@ -153,26 +164,20 @@ class App extends Component {
                       this.findEstimate(issue.id) / 60 / 60
                     )} ч`}
                     {addEstimation(this.findEstimate(issue.id) || 0)}
-                    <button
-                      onClick={this.updIssue(issue.id)}
-                      style={{
-                        margin: 4,
-                        fontSize: 10,
-                      }}
-                    >
-                      ?
-                    </button>
                     {storeId(issue.id)}
                   </h5>
-                  {issue.fields.description && (
-                    <small>{issue.fields.description}</small>
-                  )}
                   {issue.fields.subtasks.length ? (
                     <div style={{ marginLeft: 50, fontSize: 12 }}>
                       {issue.fields.subtasks.map(task => (
                         <div key={task.id}>
-                          {`${task.fields.summary} ${task.fields.description ||
-                            ''} [id: ${task.id}]`}
+                          <a
+                            href={`https://skippdev.atlassian.net/browse/${
+                              task.key
+                            }`}
+                            target="blank"
+                          >
+                            {`${task.fields.summary} [id: ${task.id}]`}
+                          </a>
                           {storeId(task.id, issue.id)}
                           <span
                             style={{
@@ -189,15 +194,6 @@ class App extends Component {
                             this.findEstimate(task.id) / 60 / 60
                           )} ч`}
                           {addEstimation(this.findEstimate(task.id) || 0)}
-                          <button
-                            onClick={this.updIssue(task.id)}
-                            style={{
-                              margin: 4,
-                              fontSize: 10,
-                            }}
-                          >
-                            ?
-                          </button>
                         </div>
                       ))}
                     </div>
