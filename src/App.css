@@ -83,7 +83,9 @@ a {
 
 .panel-vert {
   height: 100%;
+  width: 100%;
   overflow-y: auto;
+  text-align: left;
 }
 
 .contaner-vert {
@@ -93,6 +95,12 @@ a {
   justify-content: space-between;
   height: auto;
 
+}
+
+.contaner-inspector {
+  width: 100%;
+  /* padding: 8px; */
+  max-width: 430px;
 }
 
 .Resizer {

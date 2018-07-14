@@ -2,6 +2,7 @@ import { GraphQLClient } from 'graphql-request';
 
 const endpoint = 'https://api.graph.cool/simple/v1/cjjitqtxu10pn0118qlejvj0y';
 const client = new GraphQLClient(endpoint, { headers: {} });
+export const projectBase = 'https://skippdev.atlassian.net';
 
 const query = `
   query get($url: String){

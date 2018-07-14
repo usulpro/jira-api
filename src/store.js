@@ -20,6 +20,15 @@ let projectsCollection = [];
 let issuesCollection = [];
 let epicsCollection = [];
 
+export const INSPECT_TYPE = {
+  PROJECT: 'PROJECT',
+  BOARD: 'BOARD',
+  EPIC: 'EPIC',
+  STORY: 'STORY',
+  TASK: 'TASK',
+  USER: 'USER',
+};
+
 const logger = {
   enabled: true,
   log(...info) {
@@ -54,7 +63,7 @@ const multiFetch = async fetchList =>
 export const refetchData = async () => {
   localData.clear();
   return await fetchInitData();
-}
+};
 
 export const fetchInitData = async () => {
   const local = localData.get();
@@ -71,6 +80,7 @@ export const fetchInitData = async () => {
       fetch: () => getProject(proj.projectId),
       put: resp => ({
         ...resp,
+        inspectType: INSPECT_TYPE.PROJECT,
         boards: boardsCollection.filter(
           b => `${b.location.projectId}` === resp.id
         ),
@@ -113,3 +123,12 @@ export const fetchInitData = async () => {
     issuesCollection,
   };
 };
+
+
+export const sortProjByIssues = (pr1, pr2) => {
+  const brd1 = pr1.boards[0] || {issues: []};
+  const brd2 = pr2.boards[0] || {issues: []};
+  const iss1 = brd1.issues.length;
+  const iss2 = brd2.issues.length;
+  return iss2 - iss1;
+}

@@ -13,9 +13,17 @@ import {
   onProxiRequest,
 } from './api';
 
-import { fetchInitData, isDataStored, refetchData } from './store';
+import {
+  fetchInitData,
+  isDataStored,
+  refetchData,
+  sortProjByIssues,
+} from './store';
+import Inspector from './components/inspector';
 
 onProxiRequest(console.log);
+
+const exec = (...fn) => fn.forEach(f => f());
 
 class App extends Component {
   state = {
@@ -25,6 +33,8 @@ class App extends Component {
     backlog: null,
     status: 'loading...',
     isStored: isDataStored(),
+    inspectedObject: undefined,
+    currentProject: undefined,
   };
   issuesIdList = [];
 
@@ -42,19 +52,30 @@ class App extends Component {
       projectsCollection
     );
 
-    this.setState({ projects: projectsCollection, status: 'ready', isStored: isDataStored()  });
+    this.setState({
+      projects: projectsCollection,
+      status: 'ready',
+      isStored: isDataStored(),
+    });
   }
 
   refetchData = async () => {
-    this.setState({ projects: null, status: 'reloading...', isStored: false }, async () => {
-      const {
-        boardsCollection,
-        projectsCollection,
-        epicsCollection,
-        issuesCollection,
-      } = await refetchData();
-      this.setState({ projects: projectsCollection, status: 'ready', isStored: isDataStored() });
-    });
+    this.setState(
+      { projects: null, status: 'reloading...', isStored: false },
+      async () => {
+        const {
+          boardsCollection,
+          projectsCollection,
+          epicsCollection,
+          issuesCollection,
+        } = await refetchData();
+        this.setState({
+          projects: projectsCollection,
+          status: 'ready',
+          isStored: isDataStored(),
+        });
+      }
+    );
   };
 
   updIssue = issueId => async ev => {
@@ -257,10 +278,10 @@ class App extends Component {
     );
   };
 
+  updState = obj => () => this.setState({ ...obj });
+
   renderTitle = () => {
     const { status, isStored } = this.state;
-    // const isStored = isDataStored();
-    console.log('​renderTitle -> isStored', isStored);
     return (
       <header className="App-header">
         <h2 className="App-title">Welcome to Skipp API</h2>
@@ -282,10 +303,13 @@ class App extends Component {
   renderProjects = () => (
     <div className="contaner-vert">
       {this.state.projects &&
-        this.state.projects.map(proj => (
+        this.state.projects.sort(sortProjByIssues).map(proj => (
           <button
             key={proj.projectId}
-            onClick={() => console.log(proj)}
+            onClick={this.updState({
+              inspectedObject: proj,
+              currentProject: proj,
+            })}
             style={{
               margin: 8,
               border: 'solid 1px rgb(50,50,50)',
@@ -307,7 +331,26 @@ class App extends Component {
     </div>
   );
 
-  renderLayout = renderProjects => {
+  renderProjEpics = () => {
+    const { currentProject } = this.state;
+    if (!currentProject) return null;
+
+    const epics = currentProject.boards[0].epics;
+    if (!epics) return null;
+
+    return (
+      <ul>
+        {epics.map(epic => (
+          <li key={epic.id} style={{ textAlign: 'left' }}>
+            <h4>{epic.name || epic.summary || `id: ${epic.id}`}</h4>
+            {this.renderIssues(epic.issues)}
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
+  renderLayout = (renderProjects, renderProjEpics) => {
     return (
       <SplitPane
         split="vertical"
@@ -316,7 +359,7 @@ class App extends Component {
         defaultSize={200}
         style={{ position: 'relative' }}
       >
-        <div className="panel-vert">{this.renderProjects()}</div>
+        <div className="panel-vert">{renderProjects()}</div>
         <SplitPane
           split="vertical"
           minSize={180}
@@ -325,8 +368,22 @@ class App extends Component {
           style={{ position: 'relative' }}
           primary="second"
         >
-          <div>central panel</div>
-          <div>inspector</div>
+          <div>{renderProjEpics()}</div>
+          <SplitPane
+            // split="horizontal"
+            // primary="second"
+            // allowResize={true}
+            // defaultSize={200}
+            // minSize={50}
+            // maxSize={300}
+            defaultSize="80%"
+            split="horizontal"
+          >
+            <div className="panel-vert">
+              <Inspector data={this.state.inspectedObject} />
+            </div>
+            <div>console</div>
+          </SplitPane>
         </SplitPane>
       </SplitPane>
     );
@@ -336,7 +393,10 @@ class App extends Component {
     return (
       <div className="App">
         {this.renderTitle()}
-        {this.renderLayout()}
+        {this.renderLayout(
+          this.renderProjects,
+          this.renderProjEpics,
+        )}
 
         {(this.state.epics &&
           !!this.state.epics.length && (
