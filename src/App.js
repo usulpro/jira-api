@@ -20,8 +20,9 @@ import {
   sortProjByIssues,
 } from './store';
 import Inspector from './components/inspector';
+import Console from './components/console';
 
-onProxiRequest(console.log);
+// onProxiRequest(console.log);
 
 const exec = (...fn) => fn.forEach(f => f());
 
@@ -40,6 +41,8 @@ class App extends Component {
 
   async componentDidMount() {
     // const { boards, projects } = await getAllBoards();
+    this.log({ text: 'App componentDidMount' });
+    onProxiRequest(this.fetchLog);
     const {
       boardsCollection,
       projectsCollection,
@@ -58,6 +61,15 @@ class App extends Component {
       isStored: isDataStored(),
     });
   }
+
+  /*
+  logRequestFn({
+          url,
+          status: 'Ok',
+          time: 0,
+        });
+  */
+  fetchLog = info => this.log({ text: info.url });
 
   refetchData = async () => {
     this.setState(
@@ -384,7 +396,13 @@ class App extends Component {
             <div className="panel-vert">
               <Inspector data={this.state.inspectedObject} />
             </div>
-            <div>console</div>
+            <div className="panel-vert">
+              <Console
+                logger={log => {
+                  this.log = log;
+                }}
+              />
+            </div>
           </SplitPane>
         </SplitPane>
       </SplitPane>
