@@ -161,6 +161,8 @@ class App extends Component {
   };
 
   renderIssues = issues => {
+    console.log('renderIssues -> ​issues', issues);
+
     const epic = {
       issues,
       estimate: 0,
@@ -368,7 +370,7 @@ class App extends Component {
           style={{ position: 'relative' }}
           primary="second"
         >
-          <div>{renderProjEpics()}</div>
+          <div className="panel-vert">{renderProjEpics()}</div>
           <SplitPane
             // split="horizontal"
             // primary="second"
@@ -393,10 +395,7 @@ class App extends Component {
     return (
       <div className="App">
         {this.renderTitle()}
-        {this.renderLayout(
-          this.renderProjects,
-          this.renderProjEpics,
-        )}
+        {this.renderLayout(this.renderProjects, this.renderProjEpics)}
 
         {(this.state.epics &&
           !!this.state.epics.length && (

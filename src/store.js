@@ -88,26 +88,42 @@ export const fetchInitData = async () => {
     }))
   );
 
-  epicsCollection = await multiFetch(
+  // epicsCollection =
+  await multiFetch(
     boardsCollection.map(board => ({
       fetch: () => getBoardEpics(board.id),
       put: epics => {
         board.epics = epics;
+        epicsCollection.push(...epics);
         return epics;
       },
     }))
   );
 
-  issuesCollection = await multiFetch(
+  // issuesCollection =
+  await multiFetch(
     boardsCollection.map(board => ({
       fetch: () => getBoardIssues(board.id),
       put: issues => {
         board.issues = issues;
+        issuesCollection.push(...issues);
         // logger.log(`fetched ${issues ? issues.length : 'no one'} issues`, issues);
         return issues;
       },
     }))
   );
+
+  epicsCollection.forEach(epic => {
+    const issues = issuesCollection.filter(issue => {
+      const relatedEpic = issue.fields.epic || { id: null };
+      if (!relatedEpic.id) return false;
+      return relatedEpic.id === epic.id;
+    })
+    epic.issues = issues;
+  }
+
+  )
+
 
   localData.set({
     boardsCollection,
@@ -124,11 +140,10 @@ export const fetchInitData = async () => {
   };
 };
 
-
 export const sortProjByIssues = (pr1, pr2) => {
-  const brd1 = pr1.boards[0] || {issues: []};
-  const brd2 = pr2.boards[0] || {issues: []};
+  const brd1 = pr1.boards[0] || { issues: [] };
+  const brd2 = pr2.boards[0] || { issues: [] };
   const iss1 = brd1.issues.length;
   const iss2 = brd2.issues.length;
   return iss2 - iss1;
-}
+};
