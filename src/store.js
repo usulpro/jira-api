@@ -9,6 +9,11 @@ import {
   getBacklog,
   getIssue,
 } from './api';
+import { storage } from './utils/localStorage';
+
+const localData = storage('skipp_db');
+
+export const isDataStored = () => !!localData.get();
 
 let boardsCollection = [];
 let projectsCollection = [];
@@ -46,7 +51,16 @@ const logger = {
 const multiFetch = async fetchList =>
   await Promise.all(fetchList.map(async item => item.put(await item.fetch())));
 
+export const refetchData = async () => {
+  localData.clear();
+  return await fetchInitData();
+}
+
 export const fetchInitData = async () => {
+  const local = localData.get();
+  console.log('​exportfetchInitData -> local', local);
+  if (local) return local;
+
   const { boards, projects } = await getAllBoards().then(
     logger.xinfo('getAllBoards')
   );
@@ -84,6 +98,13 @@ export const fetchInitData = async () => {
       },
     }))
   );
+
+  localData.set({
+    boardsCollection,
+    projectsCollection,
+    epicsCollection,
+    issuesCollection,
+  });
 
   return {
     boardsCollection,

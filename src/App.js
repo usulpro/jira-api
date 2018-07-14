@@ -13,7 +13,7 @@ import {
   onProxiRequest,
 } from './api';
 
-import { fetchInitData } from './store';
+import { fetchInitData, isDataStored, refetchData } from './store';
 
 onProxiRequest(console.log);
 
@@ -24,6 +24,7 @@ class App extends Component {
     epics: null,
     backlog: null,
     status: 'loading...',
+    isStored: isDataStored(),
   };
   issuesIdList = [];
 
@@ -41,8 +42,20 @@ class App extends Component {
       projectsCollection
     );
 
-    this.setState({ projects: projectsCollection, status: 'ready' });
+    this.setState({ projects: projectsCollection, status: 'ready', isStored: isDataStored()  });
   }
+
+  refetchData = async () => {
+    this.setState({ projects: null, status: 'reloading...', isStored: false }, async () => {
+      const {
+        boardsCollection,
+        projectsCollection,
+        epicsCollection,
+        issuesCollection,
+      } = await refetchData();
+      this.setState({ projects: projectsCollection, status: 'ready', isStored: isDataStored() });
+    });
+  };
 
   updIssue = issueId => async ev => {
     const issue = await getIssue(issueId);
@@ -245,25 +258,34 @@ class App extends Component {
   };
 
   renderTitle = () => {
-    const { status } = this.state;
+    const { status, isStored } = this.state;
+    // const isStored = isDataStored();
+    console.log('​renderTitle -> isStored', isStored);
     return (
       <header className="App-header">
         <h2 className="App-title">Welcome to Skipp API</h2>
-        <p className="App-status">{status}</p>
+        {isStored ? (
+          <p className="App-status">
+            data stored locally{' '}
+            <button className="Btn-refetch" onClick={this.refetchData}>
+              refetch
+            </button>{' '}
+          </p>
+        ) : (
+          <p className="App-status">{status}</p>
+        )}
         <input className="App-search" type="text" placeholder="search..." />
       </header>
     );
   };
 
   renderProjects = () => (
-    <div
-      className="contaner-vert"
-    >
+    <div className="contaner-vert">
       {this.state.projects &&
         this.state.projects.map(proj => (
           <button
             key={proj.projectId}
-            onClick={this.getBoard(proj.boardId)}
+            onClick={() => console.log(proj)}
             style={{
               margin: 8,
               border: 'solid 1px rgb(50,50,50)',
@@ -275,7 +297,7 @@ class App extends Component {
             }}
           >
             <img
-              src={`https://skippdev.atlassian.net${proj.avatarURI}`}
+              src={proj.avatarUrls['48x48']}
               alt="ava"
               style={{ width: 50 }}
             />
@@ -285,14 +307,27 @@ class App extends Component {
     </div>
   );
 
-  renderLayout = (renderProjects) => {
+  renderLayout = renderProjects => {
     return (
-      <SplitPane split="vertical" minSize={150} defaultSize={300} style={{position: 'relative'}}>
-        <div className="panel-vert">
-        {this.renderProjects()}
-
-        </div>
-        <div>Right pane</div>
+      <SplitPane
+        split="vertical"
+        minSize={180}
+        maxSize={250}
+        defaultSize={200}
+        style={{ position: 'relative' }}
+      >
+        <div className="panel-vert">{this.renderProjects()}</div>
+        <SplitPane
+          split="vertical"
+          minSize={180}
+          maxSize={450}
+          defaultSize={350}
+          style={{ position: 'relative' }}
+          primary="second"
+        >
+          <div>central panel</div>
+          <div>inspector</div>
+        </SplitPane>
       </SplitPane>
     );
   };
