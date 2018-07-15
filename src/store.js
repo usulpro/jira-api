@@ -118,12 +118,18 @@ export const fetchInitData = async () => {
       const relatedEpic = issue.fields.epic || { id: null };
       if (!relatedEpic.id) return false;
       return relatedEpic.id === epic.id;
-    })
+    });
     epic.issues = issues;
-  }
+  });
 
-  )
-
+  await multiFetch(
+    issuesCollection.map(issue => ({
+      fetch: () => getIssue(issue.id),
+      put: res => {
+        Object.assign(issue, {...res})
+      },
+    }))
+  );
 
   localData.set({
     boardsCollection,

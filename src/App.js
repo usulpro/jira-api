@@ -40,8 +40,7 @@ class App extends Component {
   issuesIdList = [];
 
   async componentDidMount() {
-    // const { boards, projects } = await getAllBoards();
-    this.log({ text: 'App componentDidMount' });
+    this.log({ text: 'App did mount' });
     onProxiRequest(this.fetchLog);
     const {
       boardsCollection,
@@ -50,11 +49,6 @@ class App extends Component {
       issuesCollection,
     } = await fetchInitData();
 
-    console.log(
-      '​App -> asynccomponentDidMount -> projectsCollection',
-      projectsCollection
-    );
-
     this.setState({
       projects: projectsCollection,
       status: 'ready',
@@ -62,19 +56,13 @@ class App extends Component {
     });
   }
 
-  /*
-  logRequestFn({
-          url,
-          status: 'Ok',
-          time: 0,
-        });
-  */
-  fetchLog = info => this.log({ text: info.url });
+  fetchLog = info => this.log({ text: `fetching ${info.url}` });
 
   refetchData = async () => {
     this.setState(
       { projects: null, status: 'reloading...', isStored: false },
       async () => {
+        this.log({ text: 'refetching...' });
         const {
           boardsCollection,
           projectsCollection,
@@ -86,6 +74,7 @@ class App extends Component {
           status: 'ready',
           isStored: isDataStored(),
         });
+        this.log({ text: 'refetching done' });
       }
     );
   };
@@ -212,15 +201,15 @@ class App extends Component {
                   title="console.log"
                   key={issue.id}
                 >
-                  <h5 style={{ margin: 8 }}>
-                    <a
-                      href={`https://skippdev.atlassian.net/browse/${
-                        issue.key
-                      }`}
-                      target="blank"
-                    >
-                      {`${issue.fields.summary}  [id: ${issue.id}]`}
-                    </a>
+                  <h5
+                    style={{ margin: 8 }}
+                    onClick={this.updState({
+                      inspectedObject: issue,
+                    })}
+                    style={{cursor: 'pointer'}}
+                  >
+                    {`${issue.fields.summary}  [id: ${issue.id}]`}
+
                     <span
                       style={{
                         backgroundColor: 'rgb(200,200,200)',
@@ -230,7 +219,14 @@ class App extends Component {
                         padding: 6,
                       }}
                     >
-                      {issue.key}
+                      <a
+                        href={`https://skippdev.atlassian.net/browse/${
+                          issue.key
+                        }`}
+                        target="blank"
+                      >
+                        {issue.key}
+                      </a>
                     </span>
                     {`Оценка: ${Math.round(
                       this.findEstimate(issue.id) / 60 / 60
@@ -241,15 +237,14 @@ class App extends Component {
                   {issue.fields.subtasks.length ? (
                     <div style={{ marginLeft: 50, fontSize: 12 }}>
                       {issue.fields.subtasks.map(task => (
-                        <div key={task.id}>
-                          <a
-                            href={`https://skippdev.atlassian.net/browse/${
-                              task.key
-                            }`}
-                            target="blank"
-                          >
-                            {`${task.fields.summary} [id: ${task.id}]`}
-                          </a>
+                        <div
+                          key={task.id}
+                          onClick={this.updState({
+                            inspectedObject: task,
+                          })}
+                          style={{cursor: 'pointer'}}
+                        >
+                          {`${task.fields.summary} [id: ${task.id}]`}
                           {storeId(task.id, issue.id)}
                           <span
                             style={{
@@ -260,7 +255,14 @@ class App extends Component {
                               padding: 2,
                             }}
                           >
-                            {task.key}
+                            <a
+                              href={`https://skippdev.atlassian.net/browse/${
+                                task.key
+                              }`}
+                              target="blank"
+                            >
+                              {task.key}
+                            </a>
                           </span>
                           {`Оценка: ${Math.round(
                             this.findEstimate(task.id) / 60 / 60
@@ -392,11 +394,17 @@ class App extends Component {
             // maxSize={300}
             defaultSize="80%"
             split="horizontal"
+            pane2Style={{
+              overflowY: 'hidden',
+              // flex: 1 1 0%;
+              // position: relative;
+              // outline: none;
+            }}
           >
             <div className="panel-vert">
               <Inspector data={this.state.inspectedObject} />
             </div>
-            <div className="panel-vert">
+            <div style={{ height: '100%' }}>
               <Console
                 logger={log => {
                   this.log = log;
