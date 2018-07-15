@@ -19,6 +19,7 @@ import {
   isDataStored,
   refetchData,
   sortProjByIssues,
+  contributorRates,
 } from './store';
 import Inspector from './components/inspector';
 import Console from './components/console';
@@ -27,6 +28,37 @@ import styled from 'react-emotion';
 // onProxiRequest(console.log);
 
 const exec = (...fn) => fn.forEach(f => f());
+
+const UserAva = ({ user, onClick }) => {
+  if (!user) {
+    const NoAva = styled('div')`
+      width: 16px;
+      height: 16px;
+      border-radius: 16px;
+      background-color: #ececec;
+      border: 1px solid #cecece;
+    `;
+
+    return <NoAva title="Исполнитель не назначен" />;
+  }
+
+  const Ava = styled('img')`
+    width: 16px;
+    height: 16px;
+    border-radius: 16px;
+    cursor: pointer;
+    &:hover: border: 1px solid red;
+  `;
+
+  return (
+    <Ava
+      src={user.avatarUrls['16x16']}
+      alt="ava"
+      title={user.displayName}
+      onClick={onClick}
+    />
+  );
+};
 
 const Issue = ({
   issue,
@@ -42,7 +74,6 @@ const Issue = ({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      cursor: 'pointer',
     },
     props => ({
       opacity: props.subtask ? 0.7 : 0.8,
@@ -50,14 +81,9 @@ const Issue = ({
   );
   const Title = styled('h5')`
     margin: 8px;
-    flex-grow: 1;
+    cursor: pointer;
   `;
 
-  const Ava = styled('img')`
-    width: 16px;
-    height:16px;
-    border-radius: 16px;
-  `;
   const keyBadge = ({ key } = {}) => {
     if (!key) return null;
     const Key = styled('a')`
@@ -107,21 +133,58 @@ const Issue = ({
         </div>
       );
     const hours = Math.round((4 * est.seconds) / 60 / 60) / 4;
-    const tip = `прогресс: ${est.progress}`;
+    const tip = `прогресс: ${Math.round(100 * est.progress)}%`;
+    const costString = `стоимость ${Math.round(est.cost)}р ${
+      est.hasCostErrors ? '<- ошибка!' : ''
+    }`;
     return (
       <div>
-        <StatusBadge title={tip}>{est.statusName}{` (${Math.round(est.progress * 100)}%)`}</StatusBadge>
-        <Label>Оценка:</Label> <Value>{hours}</Value>
+        <StatusBadge title={tip}>
+          {est.statusName}
+          {` (${Math.round(est.progress * 100)}%)`}
+        </StatusBadge>
+        <Label>Оценка:</Label> <Value title={costString}>{hours}</Value>
       </div>
     );
   };
 
+  const totalEstimation = est => {
+    if (!est.cost) return null;
+    const Card = styled('div')`
+      font-size: 12px;
+      margin: 0px 80px;
+      color: #313131;
+      background-color: #ececec;
+      padding: 2px 10px;
+      border-radius: 12px;
+      flex-grow: 1;
+      text-align: center;
+    `;
+    const costString = `∑ ${Math.round(est.cost)} р.`;
+    const errorString = `${est.hasCostErrors ? ' (!!!)' : ''}`;
+    return (
+      <Card title={est.hasCostErrors ? 'есть ошибки' : ''}>
+        {costString}
+        {errorString}
+      </Card>
+    );
+  };
+
+  const SpcFx = styled('div')`
+    width: 1px;
+    flex-grow: 1;
+  `;
+
   return (
-    <Contaner subtask={subtask} onClick={() => onClick(issue)}>
-      <Title>{issue.fields.summary}</Title>
-      {
-        issue.fields.assignee && <Ava src={issue.fields.assignee.avatarUrls['16x16']} alt="ava" title={issue.fields.assignee.displayName}/>
-      }
+    <Contaner subtask={subtask}>
+      {subtask && (
+        <UserAva
+          user={issue.fields.assignee}
+          onClick={() => onClick(issue.fields.assignee)}
+        />
+      )}
+      <Title onClick={() => onClick(issue)}>{issue.fields.summary}</Title>
+      {!subtask ? totalEstimation(calcEstimate(issue)) || <SpcFx /> : <SpcFx />}
       {estimation(calcEstimate(issue))}
       {keyBadge(issue)}
     </Contaner>
@@ -152,6 +215,8 @@ class App extends Component {
     } = await fetchInitData();
 
     const projects = projectsCollection.sort(sortProjByIssues);
+    // boardsCollection.forEach(board => this.addUserRates(board.issues));
+
     this.setState({
       projects,
       status: 'ready',
@@ -176,6 +241,8 @@ class App extends Component {
         } = await refetchData();
 
         const projects = projectsCollection.sort(sortProjByIssues);
+        // boardsCollection.forEach(board => this.addUserRates(board.issues));
+
         this.setState({
           projects,
           status: 'ready',
@@ -190,6 +257,19 @@ class App extends Component {
       }
     );
   };
+
+  // addUserRates = issues => {
+  //   issues.forEach(({ assignee }) => {
+  //     if (!assignee || assignee.rate) return;
+  //     let rate;
+  //     try {
+  //       rate = contributorRates(assignee.key);
+  //     } catch (error) {
+  //       rate = 'ОШИБКА РЕЙТ ПОЛЬЗОВАТЕЛЯ НЕ ЗАДАН';
+  //     }
+  //     Object.assign(assignee, { rate });
+  //   });
+  // };
 
   updIssue = issueId => async ev => {
     const issue = await getIssue(issueId);
@@ -296,12 +376,25 @@ class App extends Component {
       }[statusName]);
 
     const estimateTask = task => {
+      const calcCost = task => {
+        try {
+          const key = task.fields.assignee.key;
+          const rate = contributorRates(key);
+          const seconds = task.fields.timetracking.originalEstimateSeconds;
+          const cost = (rate * seconds) / 60 / 60;
+          const hasCostErrors = false;
+          return { cost, hasCostErrors };
+        } catch (error) {
+          return { cost: 0, hasCostErrors: true };
+        }
+      };
       try {
         return {
           seconds: task.fields.timetracking.originalEstimateSeconds,
           statusName: task.fields.status.name,
           statusId: task.fields.status.id,
           progress: statusWeight(task.fields.status.name),
+          ...calcCost(task),
         };
       } catch (error) {
         return {
@@ -316,6 +409,9 @@ class App extends Component {
       const summary = {
         ...sum,
         seconds: (sum.seconds || 0) + (taskEst.seconds || 0),
+        cost: (sum.cost || 0) + (taskEst.cost || 0),
+        hasCostErrors:
+          sum.hasCostErrors || false || (taskEst.hasCostErrors || false),
         statusName: 'integration',
         progressList: sum.progressList
           ? [...sum.progressList, taskEst]
@@ -350,21 +446,21 @@ class App extends Component {
                 <Contaner key={issue.id}>
                   <Issue
                     issue={issue}
-                    onClick={this.updState({
-                      inspectedObject: issue,
-                    })}
+                    onClick={inspectedObject =>
+                      this.setState({ inspectedObject })
+                    }
                     calcEstimate={estimateIssue}
                   />
 
                   {issue.fields.subtasks.length ? (
-                    <div style={{ marginLeft: 30, fontSize: 14 }}>
+                    <div style={{ marginLeft: 16, fontSize: 14 }}>
                       {issue.fields.subtasks.map(task => (
                         <Issue
                           issue={task}
                           subtask
-                          onClick={this.updState({
-                            inspectedObject: task,
-                          })}
+                          onClick={inspectedObject =>
+                            this.setState({ inspectedObject })
+                          }
                           calcEstimate={estimateIssue}
                         />
                       ))}
@@ -447,11 +543,9 @@ class App extends Component {
 
   renderProjEpics = () => {
     const { currentProject } = this.state;
-    console.log('​renderProjEpics -> currentProject', currentProject);
     if (!currentProject) return null;
 
     const epics = currentProject.boards[0].epics;
-    console.log('​renderProjEpics -> epics', epics);
     if (!epics) return null;
 
     return (

@@ -29,6 +29,17 @@ export const INSPECT_TYPE = {
   USER: 'USER',
 };
 
+const keyShouldExist = key => {
+  throw `Rate for user with key ${key} isn't set`;
+};
+
+export const contributorRates = key =>
+  ({
+    vadosgrybyk: 1000,
+    pv4pv4: 1000,
+    ozmo: 1200,
+  }[key] || keyShouldExist(key));
+
 const logger = {
   enabled: true,
   log(...info) {
@@ -128,19 +139,19 @@ export const fetchInitData = async () => {
     issuesCollection.map(issue => ({
       fetch: () => getIssue(issue.id),
       put: res => {
-        Object.assign(issue, {...res})
+        Object.assign(issue, { ...res });
       },
     }))
   );
 
   // update subtasks
   issuesCollection.forEach(issue => {
-    if (!issue.fields.subtasks.length) return
+    if (!issue.fields.subtasks.length) return;
     issue.fields.subtasks.forEach(task => {
-      const fullIssue = issuesCollection.find(item => (item.id === task.id))
-      Object.assign(task, {...fullIssue})
-    })
-  })
+      const fullIssue = issuesCollection.find(item => item.id === task.id);
+      Object.assign(task, { ...fullIssue });
+    });
+  });
 
   localData.set({
     boardsCollection,
