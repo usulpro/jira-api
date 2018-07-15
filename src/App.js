@@ -52,6 +52,12 @@ const Issue = ({
     margin: 8px;
     flex-grow: 1;
   `;
+
+  const Ava = styled('img')`
+    width: 16px;
+    height:16px;
+    border-radius: 16px;
+  `;
   const keyBadge = ({ key } = {}) => {
     if (!key) return null;
     const Key = styled('a')`
@@ -93,6 +99,7 @@ const Issue = ({
       font-size: 12px;
       font-weight: 600;
     `;
+
     if (est.error)
       return (
         <div title={est.error}>
@@ -100,9 +107,10 @@ const Issue = ({
         </div>
       );
     const hours = Math.round((4 * est.seconds) / 60 / 60) / 4;
+    const tip = `прогресс: ${est.progress}`;
     return (
       <div>
-        <StatusBadge>{est.statusName}</StatusBadge>
+        <StatusBadge title={tip}>{est.statusName}{` (${Math.round(est.progress * 100)}%)`}</StatusBadge>
         <Label>Оценка:</Label> <Value>{hours}</Value>
       </div>
     );
@@ -111,6 +119,9 @@ const Issue = ({
   return (
     <Contaner subtask={subtask} onClick={() => onClick(issue)}>
       <Title>{issue.fields.summary}</Title>
+      {
+        issue.fields.assignee && <Ava src={issue.fields.assignee.avatarUrls['16x16']} alt="ava" title={issue.fields.assignee.displayName}/>
+      }
       {estimation(calcEstimate(issue))}
       {keyBadge(issue)}
     </Contaner>
@@ -276,12 +287,21 @@ class App extends Component {
       width: 'auto',
     });
 
+    const statusWeight = statusName =>
+      ({
+        'Selected for Development': 0,
+        'In Progress': 0.25,
+        Review: 0.75,
+        Done: 1,
+      }[statusName]);
+
     const estimateTask = task => {
       try {
         return {
           seconds: task.fields.timetracking.originalEstimateSeconds,
           statusName: task.fields.status.name,
           statusId: task.fields.status.id,
+          progress: statusWeight(task.fields.status.name),
         };
       } catch (error) {
         return {
@@ -290,12 +310,34 @@ class App extends Component {
       }
     };
 
+    const reduceSubtasks = (sum, task) => {
+      const taskEst = estimateTask(task);
+      if (taskEst.error) return sum;
+      const summary = {
+        ...sum,
+        seconds: (sum.seconds || 0) + (taskEst.seconds || 0),
+        statusName: 'integration',
+        progressList: sum.progressList
+          ? [...sum.progressList, taskEst]
+          : [taskEst],
+      };
+      return summary;
+    };
+
     const estimateIssue = issue => {
       if (!issue || !issue.fields) return null;
       const hasSubtasks = issue.fields.subtasks && issue.fields.subtasks.length;
       if (!hasSubtasks) {
         return estimateTask(issue);
       }
+      const story = issue.fields.subtasks.reduce(reduceSubtasks, {});
+      story.progress =
+        story.progressList.reduce(
+          (sum, taskEst) => sum + taskEst.progress * taskEst.seconds,
+          0
+        ) /
+        story.progressList.reduce((sum, taskEst) => sum + taskEst.seconds, 0);
+      return story;
     };
 
     return (
@@ -311,6 +353,7 @@ class App extends Component {
                     onClick={this.updState({
                       inspectedObject: issue,
                     })}
+                    calcEstimate={estimateIssue}
                   />
 
                   {issue.fields.subtasks.length ? (
