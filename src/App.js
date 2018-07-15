@@ -353,11 +353,11 @@ class App extends Component {
     return null;
   };
 
-  renderIssues = issues => {
-    const epic = {
-      issues,
-      estimate: 0,
-    };
+  renderIssues = (issues, epic) => {
+    // const epic = {
+    //   issues,
+    //   estimate: 0,
+    // };
 
     const Contaner = styled('div')({
       border: '1px solid rgb(150, 150, 150)',
@@ -436,11 +436,48 @@ class App extends Component {
       return story;
     };
 
+    const estimateEpic = epic => {
+      const issuesEst = epic.issues.map(estimateIssue);
+      console.log('​issuesEst', issuesEst);
+      const epicEst = issuesEst.reduce(
+        (sum, est) => ({
+          cost: (sum.cost || 0) + (est.cost || 0),
+          seconds: (sum.seconds || 0) + (est.seconds || 0),
+          hasCostErrors: sum.hasCostErrors || est.hasCostErrors || false,
+        }),
+        { cost: 0, seconds: 0, hasCostErrors: false }
+      );
+      console.log('​epicEst', epicEst);
+      return epicEst;
+    };
+
+    const showEpicEstimate = epic => {
+      const est = estimateEpic(epic);
+      const Summary = styled('div')`
+        padding: 20px 8px;
+        background-color: #d4d4d4;
+        margin-bottom: 16px;
+        margin-top: 24px;
+        border-radius: 4px;
+        color: #3c3c3c;
+      `;
+      return (
+        <Summary>
+          <h4>{epic.name || epic.summary || `id: ${epic.id}`}</h4>
+          {`Суммарная стоимость: ${Math.round(estimateEpic(epic).cost)} р. ${
+            estimateEpic(epic).hasCostErrors ? '(посчитано с ошибками)' : ''
+          } Суммарное время: ${Math.round(
+            estimateEpic(epic).seconds / 60 / 60
+          )} часов`}
+        </Summary>
+      );
+    };
+
     return (
       <div>
         {epic.issues && epic.issues.length ? (
           <div>
-            <i>issues:</i>
+            {showEpicEstimate(epic)}
             <div>
               {epic.issues.map(issue => (
                 <Contaner key={issue.id}>
@@ -468,19 +505,6 @@ class App extends Component {
                   ) : null}
                 </Contaner>
               ))}
-            </div>
-            <div
-              style={{
-                border: '1px solid rgb(50,50,50)',
-                borderRadius: 4,
-                padding: 16,
-                backgroundColor: 'rgb(200,250,200)',
-              }}
-            >
-              <h4>Суммарная оценка по разделу:</h4>
-              <p>
-                {`${Math.round((100 * epic.estimate) / 60 / 60) / 100} часов`}
-              </p>
             </div>
           </div>
         ) : null}
@@ -548,15 +572,14 @@ class App extends Component {
     const epics = currentProject.boards[0].epics;
     if (!epics) return null;
 
+    const Contaner = styled('div')`
+      padding: 16px;
+    `;
+
     return (
-      <ul>
-        {epics.map(epic => (
-          <li key={epic.id} style={{ textAlign: 'left' }}>
-            <h4>{epic.name || epic.summary || `id: ${epic.id}`}</h4>
-            {this.renderIssues(epic.issues)}
-          </li>
-        ))}
-      </ul>
+      <Contaner>
+        {epics.map(epic => this.renderIssues(epic.issues, epic))}
+      </Contaner>
     );
   };
 
