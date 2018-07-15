@@ -11,6 +11,7 @@ import {
   getBacklog,
   getIssue,
   onProxiRequest,
+  projectBase,
 } from './api';
 
 import {
@@ -21,10 +22,100 @@ import {
 } from './store';
 import Inspector from './components/inspector';
 import Console from './components/console';
+import styled from 'react-emotion';
 
 // onProxiRequest(console.log);
 
 const exec = (...fn) => fn.forEach(f => f());
+
+const Issue = ({
+  issue,
+  subtask,
+  calcEstimate = () => null,
+  onClick = () => {},
+}) => {
+  const Contaner = styled('div')(
+    {
+      padding: 4,
+      margin: 2,
+      width: 'auto',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      cursor: 'pointer',
+    },
+    props => ({
+      opacity: props.subtask ? 0.7 : 0.8,
+    })
+  );
+  const Title = styled('h5')`
+    margin: 8px;
+    flex-grow: 1;
+  `;
+  const keyBadge = ({ key } = {}) => {
+    if (!key) return null;
+    const Key = styled('a')`
+      color: hsl(0, 0%, 34%);
+      margin: 0px 16px;
+      font-size: 10px;
+      float: right;
+      text-decoration: none;
+      border: 1px solid #9e9e9e;
+      padding: 2px;
+      border-radius: 2px;
+    `;
+    const link = `${projectBase}/browse/${key}`;
+    return (
+      <Key href={link} target="_blank">
+        {key}
+      </Key>
+    );
+  };
+
+  const estimation = est => {
+    if (!est) return null;
+    const Label = styled('span')`
+      opacity: 0.8;
+      font-size: 12px;
+    `;
+
+    const StatusBadge = styled('span')`
+      font-size: 10px;
+      border: 1px solid #cacaca;
+      background-color: #e8e8e8;
+      border-radius: 2px;
+      padding: 2px;
+      margin: 0px 4px;
+      color: #3a3a3a;
+    `;
+
+    const Value = styled('span')`
+      font-size: 12px;
+      font-weight: 600;
+    `;
+    if (est.error)
+      return (
+        <div title={est.error}>
+          <Label>Ошибка!</Label>
+        </div>
+      );
+    const hours = Math.round((4 * est.seconds) / 60 / 60) / 4;
+    return (
+      <div>
+        <StatusBadge>{est.statusName}</StatusBadge>
+        <Label>Оценка:</Label> <Value>{hours}</Value>
+      </div>
+    );
+  };
+
+  return (
+    <Contaner subtask={subtask} onClick={() => onClick(issue)}>
+      <Title>{issue.fields.summary}</Title>
+      {estimation(calcEstimate(issue))}
+      {keyBadge(issue)}
+    </Contaner>
+  );
+};
 
 class App extends Component {
   state = {
@@ -49,14 +140,17 @@ class App extends Component {
       issuesCollection,
     } = await fetchInitData();
 
+    const projects = projectsCollection.sort(sortProjByIssues);
     this.setState({
-      projects: projectsCollection,
+      projects,
       status: 'ready',
       isStored: isDataStored(),
+      currentProject: projects[0],
     });
   }
 
-  fetchLog = info => this.log({ text: `fetching ${info.url}` });
+  fetchLog = info =>
+    this.log({ text: `fetching ${info.url}`, state: info.data });
 
   refetchData = async () => {
     this.setState(
@@ -69,12 +163,19 @@ class App extends Component {
           epicsCollection,
           issuesCollection,
         } = await refetchData();
+
+        const projects = projectsCollection.sort(sortProjByIssues);
         this.setState({
-          projects: projectsCollection,
+          projects,
           status: 'ready',
           isStored: isDataStored(),
+          currentProject: projects[0],
         });
         this.log({ text: 'refetching done' });
+        this.log({ text: 'projects', state: { projects } });
+        this.log({ text: 'boardsCollection', state: { boardsCollection } });
+        this.log({ text: 'epicsCollection', state: { epicsCollection } });
+        this.log({ text: 'issuesCollection', state: { issuesCollection } });
       }
     );
   };
@@ -162,25 +263,39 @@ class App extends Component {
   };
 
   renderIssues = issues => {
-    console.log('renderIssues -> ​issues', issues);
-
     const epic = {
       issues,
       estimate: 0,
     };
-    const addEstimation = est => {
-      epic.estimate = epic.estimate + est;
-      return null;
+
+    const Contaner = styled('div')({
+      border: '1px solid rgb(150, 150, 150)',
+      borderRadius: 2,
+      padding: 4,
+      margin: 2,
+      width: 'auto',
+    });
+
+    const estimateTask = task => {
+      try {
+        return {
+          seconds: task.fields.timetracking.originalEstimateSeconds,
+          statusName: task.fields.status.name,
+          statusId: task.fields.status.id,
+        };
+      } catch (error) {
+        return {
+          error,
+        };
+      }
     };
 
-    const storeId = (issueId, parentId) => {
-      const ind = this.issuesIdList.findIndex(v => v.issueId === issueId);
-      if (ind >= 0) {
-        // this.issuesIdList[ind] = { issueId, estimate: 0, parentId };
-        return null;
+    const estimateIssue = issue => {
+      if (!issue || !issue.fields) return null;
+      const hasSubtasks = issue.fields.subtasks && issue.fields.subtasks.length;
+      if (!hasSubtasks) {
+        return estimateTask(issue);
       }
-      this.issuesIdList.push({ issueId, estimate: 0, parentId });
-      return null;
     };
 
     return (
@@ -190,89 +305,29 @@ class App extends Component {
             <i>issues:</i>
             <div>
               {epic.issues.map(issue => (
-                <div
-                  style={{
-                    border: '1px solid rgb(150, 150, 150)',
-                    borderRadius: 2,
-                    padding: 4,
-                    margin: 2,
-                    width: 'auto',
-                  }}
-                  title="console.log"
-                  key={issue.id}
-                >
-                  <h5
-                    style={{ margin: 8 }}
+                <Contaner key={issue.id}>
+                  <Issue
+                    issue={issue}
                     onClick={this.updState({
                       inspectedObject: issue,
                     })}
-                    style={{cursor: 'pointer'}}
-                  >
-                    {`${issue.fields.summary}  [id: ${issue.id}]`}
+                  />
 
-                    <span
-                      style={{
-                        backgroundColor: 'rgb(200,200,200)',
-                        color: 'rgb(50,50,50,)',
-                        fontWeight: 400,
-                        margin: 8,
-                        padding: 6,
-                      }}
-                    >
-                      <a
-                        href={`https://skippdev.atlassian.net/browse/${
-                          issue.key
-                        }`}
-                        target="blank"
-                      >
-                        {issue.key}
-                      </a>
-                    </span>
-                    {`Оценка: ${Math.round(
-                      this.findEstimate(issue.id) / 60 / 60
-                    )} ч`}
-                    {/* {addEstimation(this.findEstimate(issue.id) || 0)} */}
-                    {storeId(issue.id)}
-                  </h5>
                   {issue.fields.subtasks.length ? (
-                    <div style={{ marginLeft: 50, fontSize: 12 }}>
+                    <div style={{ marginLeft: 30, fontSize: 14 }}>
                       {issue.fields.subtasks.map(task => (
-                        <div
-                          key={task.id}
+                        <Issue
+                          issue={task}
+                          subtask
                           onClick={this.updState({
                             inspectedObject: task,
                           })}
-                          style={{cursor: 'pointer'}}
-                        >
-                          {`${task.fields.summary} [id: ${task.id}]`}
-                          {storeId(task.id, issue.id)}
-                          <span
-                            style={{
-                              backgroundColor: 'rgb(200,200,200)',
-                              color: 'rgb(50,50,50,)',
-                              fontWeight: 400,
-                              margin: 3,
-                              padding: 2,
-                            }}
-                          >
-                            <a
-                              href={`https://skippdev.atlassian.net/browse/${
-                                task.key
-                              }`}
-                              target="blank"
-                            >
-                              {task.key}
-                            </a>
-                          </span>
-                          {`Оценка: ${Math.round(
-                            this.findEstimate(task.id) / 60 / 60
-                          )} ч`}
-                          {addEstimation(this.findEstimate(task.id) || 0)}
-                        </div>
+                          calcEstimate={estimateIssue}
+                        />
                       ))}
                     </div>
                   ) : null}
-                </div>
+                </Contaner>
               ))}
             </div>
             <div
@@ -319,9 +374,9 @@ class App extends Component {
   renderProjects = () => (
     <div className="contaner-vert">
       {this.state.projects &&
-        this.state.projects.sort(sortProjByIssues).map(proj => (
+        this.state.projects.map(proj => (
           <button
-            key={proj.projectId}
+            key={proj.id}
             onClick={this.updState({
               inspectedObject: proj,
               currentProject: proj,
@@ -349,9 +404,11 @@ class App extends Component {
 
   renderProjEpics = () => {
     const { currentProject } = this.state;
+    console.log('​renderProjEpics -> currentProject', currentProject);
     if (!currentProject) return null;
 
     const epics = currentProject.boards[0].epics;
+    console.log('​renderProjEpics -> epics', epics);
     if (!epics) return null;
 
     return (
@@ -409,6 +466,7 @@ class App extends Component {
                 logger={log => {
                   this.log = log;
                 }}
+                onClick={inspectedObject => this.setState({ inspectedObject })}
               />
             </div>
           </SplitPane>

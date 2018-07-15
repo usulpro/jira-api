@@ -39,16 +39,26 @@ const Line = styled('div')`
   width: 100%;
   height: 16px;
   border-bottom: 1px solid #e0e0e0;
+  cursor: pointer;
 `;
+
+const LineItem = ({text, state, onClick}) => (<Line onClick={() => onClick(state)}>{text}</Line>)
 
 export default class Console extends React.Component {
   static propTypes = {
     logger: PropTypes.func,
+    onClick: PropTypes.func,
   };
   static defaultProps = {
     logger: () => {},
+    onClick: () => {},
   };
   state = {
+    /**
+     * @desc array of objects. log items
+     * @param text {string} text to output
+     * @param state {object} some data. console.log onClick
+     */
     logs: [],
   };
   componentDidMount() {
@@ -71,7 +81,7 @@ export default class Console extends React.Component {
           }}
         >
           <ScrolArea>
-            {this.state.logs.map(item => <Line>{item.text}</Line>)}
+            {this.state.logs.map(item => <LineItem text={item.text} state={item.state} key={item.text} onClick={this.props.onClick}/>)}
           </ScrolArea>
         </Contaner>
       </Panel>

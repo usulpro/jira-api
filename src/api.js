@@ -31,6 +31,7 @@ export const proxiRequest = url => {
           url,
           status: 'Ok',
           time: 0,
+          data,
         });
         return data;
       } catch (error) {

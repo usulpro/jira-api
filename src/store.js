@@ -113,6 +113,7 @@ export const fetchInitData = async () => {
     }))
   );
 
+  // link issues to epic
   epicsCollection.forEach(epic => {
     const issues = issuesCollection.filter(issue => {
       const relatedEpic = issue.fields.epic || { id: null };
@@ -122,6 +123,7 @@ export const fetchInitData = async () => {
     epic.issues = issues;
   });
 
+  // update issues
   await multiFetch(
     issuesCollection.map(issue => ({
       fetch: () => getIssue(issue.id),
@@ -130,6 +132,15 @@ export const fetchInitData = async () => {
       },
     }))
   );
+
+  // update subtasks
+  issuesCollection.forEach(issue => {
+    if (!issue.fields.subtasks.length) return
+    issue.fields.subtasks.forEach(task => {
+      const fullIssue = issuesCollection.find(item => (item.id === task.id))
+      Object.assign(task, {...fullIssue})
+    })
+  })
 
   localData.set({
     boardsCollection,
