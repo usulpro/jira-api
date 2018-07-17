@@ -82,12 +82,15 @@ export const fetchInitData = async () => {
   if (local) return local;
 
   const { boards, projects } = await getAllBoards().then(
-    logger.xinfo('getAllBoards')
+    logger.info('getAllBoards')
   );
   boardsCollection = boards;
 
+  console.log('​exportfetchInitData -> projects', projects);
+
+
   projectsCollection = await multiFetch(
-    projects.map(proj => ({
+    projects.filter(pr => pr.projectId === 10021).map(proj => ({
       fetch: () => getProject(proj.projectId),
       put: resp => ({
         ...resp,
@@ -98,6 +101,7 @@ export const fetchInitData = async () => {
       }),
     }))
   );
+
 
   // epicsCollection =
   await multiFetch(
@@ -153,12 +157,12 @@ export const fetchInitData = async () => {
     });
   });
 
-  localData.set({
-    boardsCollection,
-    projectsCollection,
-    epicsCollection,
-    issuesCollection,
-  });
+  // localData.set({
+  //   boardsCollection,
+  //   projectsCollection,
+  //   epicsCollection,
+  //   issuesCollection,
+  // });
 
   return {
     boardsCollection,
