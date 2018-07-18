@@ -233,15 +233,17 @@ class App extends Component {
       projects: projectsCollection,
       status: 'ready',
       currentProject: this.state.projects.find(proj => proj.key === key),
-    });
+    },
+    () => this.log({ text: 'fetchProjectData', state: { projectsCollection } })
+    );
   };
 
   refetchData = async () => {
+    const currentProjKey = this.state.currentProject.key;
     this.setState(
-      { projects: null, status: 'reloading...', isStored: false },
+      { projects: null, status: `refetching for ${currentProjKey}...`, isStored: false },
       async () => {
         this.log({ text: 'refetching...' });
-        const currentProjKey = this.state.currentProject.key;
         const {
           boardsCollection,
           projectsCollection,
@@ -255,13 +257,12 @@ class App extends Component {
           {
             projects,
             status: 'ready',
-            // isStored: isDataStored(),
+            isStored: true,
             currentProject: projects.find(proj => proj.key === currentProjKey),
           },
           this.fetchProjectData(currentProjKey)
         );
-        this.log({ text: 'refetching done' });
-        this.log({ text: 'projects', state: { projects } });
+
       }
     );
   };
@@ -549,9 +550,9 @@ class App extends Component {
           <button
             key={proj.id}
             onClick={exec(
-              this.updState({ status: 'fetching...' }),
+              // this.updState({ status: 'fetching...' }),
               this.fetchProjectData(proj.key),
-              this.updState({ inspectedObject: proj })
+              // this.updState({ inspectedObject: proj })
             )}
             style={{
               margin: 8,
