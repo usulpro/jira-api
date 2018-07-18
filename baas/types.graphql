@@ -9,6 +9,12 @@ type File @model {
   url: String! @isUnique
 }
 
+type Contributor @model {
+  id: ID! @isUnique
+  key: String! @isUnique
+  rate: Int!
+}
+
 type User @model {
   createdAt: DateTime!
   id: ID! @isUnique

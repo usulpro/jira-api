@@ -19,4 +19,5 @@ permissions:
 - operation: User.create
 - operation: User.update
 - operation: User.delete
+- operation: Contributor.read
 rootTokens: []

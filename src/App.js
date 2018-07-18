@@ -200,7 +200,7 @@ class App extends Component {
     epics: null,
     backlog: null,
     status: 'loading...',
-    // isStored: isDataStored(),
+    isStored: false, // isDataStored(),
     inspectedObject: undefined,
     currentProject: undefined,
   };
@@ -217,7 +217,7 @@ class App extends Component {
       {
         projects,
         status: 'fetching...',
-        // isStored: isDataStored(),
+        isStored: true,
         currentProject: projects.find(proj => proj.key === 'EWPH'),
       },
       this.fetchProjectData('EWPH')
@@ -241,27 +241,27 @@ class App extends Component {
       { projects: null, status: 'reloading...', isStored: false },
       async () => {
         this.log({ text: 'refetching...' });
+        const currentProjKey = this.state.currentProject.key;
         const {
           boardsCollection,
           projectsCollection,
-          epicsCollection,
-          issuesCollection,
+          // epicsCollection,
+          // issuesCollection,
         } = await refetchData();
 
-        const projects = projectsCollection.sort(sortProjByIssues);
-        // boardsCollection.forEach(board => this.addUserRates(board.issues));
+        const projects = projectsCollection; // .sort(sortProjByIssues);
 
-        this.setState({
-          projects,
-          status: 'ready',
-          // isStored: isDataStored(),
-          currentProject: projects[0],
-        });
+        this.setState(
+          {
+            projects,
+            status: 'ready',
+            // isStored: isDataStored(),
+            currentProject: projects.find(proj => proj.key === currentProjKey),
+          },
+          this.fetchProjectData(currentProjKey)
+        );
         this.log({ text: 'refetching done' });
         this.log({ text: 'projects', state: { projects } });
-        this.log({ text: 'boardsCollection', state: { boardsCollection } });
-        this.log({ text: 'epicsCollection', state: { epicsCollection } });
-        this.log({ text: 'issuesCollection', state: { issuesCollection } });
       }
     );
   };
@@ -387,7 +387,7 @@ class App extends Component {
       const calcCost = task => {
         try {
           const key = task.fields.assignee.key;
-          const rate = contributorRates(key);
+          const rate = contributorRates(key).rate;
           const seconds = task.fields.timetracking.originalEstimateSeconds;
           const cost = (rate * seconds) / 60 / 60;
           const hasCostErrors = false;
@@ -549,7 +549,7 @@ class App extends Component {
           <button
             key={proj.id}
             onClick={exec(
-              this.updState({ status: 'fetching' }),
+              this.updState({ status: 'fetching...' }),
               this.fetchProjectData(proj.key),
               this.updState({ inspectedObject: proj })
             )}

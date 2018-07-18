@@ -8,11 +8,12 @@ import {
   getNoEpicIssues,
   getBacklog,
   getIssue,
+  getContributors,
 } from './api';
 import { storage } from './utils/localStorage';
 
-// const localData = storage('skipp_db');
 const projectsData = storage('skipp_projects');
+const localProjMap = {};
 
 // export const isDataStored = () => !!localData.get();
 
@@ -32,12 +33,9 @@ const keyShouldExist = key => {
   throw `Rate for user with key ${key} isn't set`;
 };
 
+let contributorsCollection = [];
 export const contributorRates = key =>
-  ({
-    vadosgrybyk: 1000,
-    pv4pv4: 1000,
-    ozmo: 1200,
-  }[key] || keyShouldExist(key));
+  contributorsCollection.find(cont => cont.key === key) || keyShouldExist(key);
 
 const logger = {
   enabled: true,
@@ -71,9 +69,9 @@ const multiFetch = async fetchList =>
   await Promise.all(fetchList.map(async item => item.put(await item.fetch())));
 
 export const refetchData = async () => {
-  // localData.clear();
-  // return await fetchInitData();
-  throw 'refetchData нужно переписать';
+  projectsData.clear();
+  Object.keys(localProjMap).map(key => localProjMap[key].clear());
+  return await fetchProjects();
 };
 
 export const fetchProjects = async () => {
@@ -81,9 +79,10 @@ export const fetchProjects = async () => {
   if (local) {
     projectsCollection = local.projectsCollection;
     boardsCollection = local.boardsCollection;
+    contributorsCollection = local.contributorsCollection;
     return local;
   }
-
+  contributorsCollection = await getContributors();
   const { boards, projects } = await getAllBoards().then(
     logger.info('getAllBoards')
   );
@@ -107,6 +106,7 @@ export const fetchProjects = async () => {
   projectsData.set({
     boardsCollection,
     projectsCollection,
+    contributorsCollection,
   });
 
   return {
@@ -117,17 +117,20 @@ export const fetchProjects = async () => {
 
 export const fetchProjectData = async key => {
   const localProjectData = storage(key);
+  localProjMap[key] = localProjectData;
   if (localProjectData.get()) {
     const local = localProjectData.get();
-    if (local) return {
-      boardsCollection,
-      projectsCollection,
-      epicsCollection: local.epicsCollection,
-      issuesCollection: local.issuesCollection,
-    };
+    if (local)
+      return {
+        boardsCollection,
+        projectsCollection,
+        epicsCollection: local.epicsCollection,
+        issuesCollection: local.issuesCollection,
+      };
   }
 
-  const boardId = projectsCollection.find(proj => proj.key === key).boards[0].id;
+  const boardId = projectsCollection.find(proj => proj.key === key).boards[0]
+    .id;
 
   let issuesCollection = [];
   let epicsCollection = [];
@@ -197,7 +200,6 @@ export const fetchProjectData = async key => {
     epicsCollection,
     issuesCollection,
   });
-
 
   return {
     boardsCollection,
