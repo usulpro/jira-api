@@ -118,21 +118,22 @@ export const fetchProjects = async () => {
 export const fetchProjectData = async key => {
   const localProjectData = storage(key);
   localProjMap[key] = localProjectData;
-  if (localProjectData.get()) {
-    const local = localProjectData.get();
-    if (local)
-      return {
-        boardsCollection,
-        projectsCollection,
-        epicsCollection: local.epicsCollection,
-        issuesCollection: local.issuesCollection,
-      };
-  }
+  // if (localProjectData.get()) {
+  //   const local = localProjectData.get();
+  //   if (local)
+  //     return {
+  //       boardsCollection,
+  //       projectsCollection,
+  //       epicsCollection: local.epicsCollection,
+  //       issuesCollection: local.issuesCollection,
+  //     };
+  // }
 
   const boardId = projectsCollection.find(proj => proj.key === key).boards[0]
     .id;
 
   let issuesCollection = [];
+  let backlogCollection = [];
   let epicsCollection = [];
 
   // epicsCollection =
@@ -147,7 +148,19 @@ export const fetchProjectData = async key => {
     }))
   );
 
-  console.log('​boardsCollection', boardsCollection);
+  // backlogCollection =
+  await multiFetch(
+    boardsCollection.filter(brd => brd.id === boardId).map(board => ({
+      fetch: () => getBacklog(board.id),
+      put: items => {
+        board.backlog = items;
+        backlogCollection.push(...items);
+        return items;
+      },
+    }))
+  );
+
+
 
   // issuesCollection =
   await multiFetch(
@@ -182,6 +195,16 @@ export const fetchProjectData = async key => {
     }))
   );
 
+  // update backlog issues
+  await multiFetch(
+    backlogCollection.map(issue => ({
+      fetch: () => getIssue(issue.id),
+      put: res => {
+        Object.assign(issue, { ...res });
+      },
+    }))
+  );
+
   // update subtasks
   issuesCollection.forEach(issue => {
     if (!issue.fields.subtasks.length) return;
@@ -190,6 +213,19 @@ export const fetchProjectData = async key => {
       Object.assign(task, { ...fullIssue });
     });
   });
+
+  // update subtasks
+  backlogCollection.forEach(issue => {
+    if (!issue.fields.subtasks.length) return;
+    issue.fields.subtasks.forEach(task => {
+      const fullIssue = backlogCollection.find(item => item.id === task.id);
+      Object.assign(task, { ...fullIssue });
+    });
+  });
+
+  console.log('backlogCollection', backlogCollection);
+  console.log('boardsCollection', boardsCollection);
+  console.log('projectsCollection', projectsCollection);
 
   projectsData.set({
     boardsCollection,

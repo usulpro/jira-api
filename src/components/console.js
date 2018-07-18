@@ -81,7 +81,7 @@ export default class Console extends React.Component {
           }}
         >
           <ScrolArea>
-            {this.state.logs.map(item => <LineItem text={item.text} state={item.state} key={item.text} onClick={this.props.onClick}/>)}
+            {this.state.logs.map((item, ind) => <LineItem text={item.text} state={item.state} key={`${item.text}-${ind}`} onClick={this.props.onClick}/>)}
           </ScrolArea>
         </Contaner>
       </Panel>

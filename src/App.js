@@ -145,7 +145,8 @@ const Issue = ({
           {est.statusName}
           {` (${Math.round(est.progress * 100)}%)`}
         </StatusBadge>
-        <Label>Оценка:</Label> <Value title={costString}>{hours}</Value>
+        <Label>Оценка:</Label>{' '}
+        <Value title={costString}>{hours || 'нет оценки'}</Value>
       </div>
     );
   };
@@ -218,9 +219,9 @@ class App extends Component {
         projects,
         status: 'fetching...',
         isStored: true,
-        currentProject: projects.find(proj => proj.key === 'EWPH'),
+        currentProject: projects.find(proj => proj.key === 'SAD'),
       },
-      this.fetchProjectData('EWPH')
+      this.fetchProjectData('SAD')
     );
   }
 
@@ -229,19 +230,25 @@ class App extends Component {
 
   fetchProjectData = key => async () => {
     const { projectsCollection } = await fetchProjectData(key);
-    this.setState({
-      projects: projectsCollection,
-      status: 'ready',
-      currentProject: this.state.projects.find(proj => proj.key === key),
-    },
-    () => this.log({ text: 'fetchProjectData', state: { projectsCollection } })
+    this.setState(
+      {
+        projects: projectsCollection,
+        status: 'ready',
+        currentProject: this.state.projects.find(proj => proj.key === key),
+      },
+      () =>
+        this.log({ text: 'fetchProjectData', state: { projectsCollection } })
     );
   };
 
   refetchData = async () => {
     const currentProjKey = this.state.currentProject.key;
     this.setState(
-      { projects: null, status: `refetching for ${currentProjKey}...`, isStored: false },
+      {
+        projects: null,
+        status: `refetching for ${currentProjKey}...`,
+        isStored: false,
+      },
       async () => {
         this.log({ text: 'refetching...' });
         const {
@@ -262,7 +269,6 @@ class App extends Component {
           },
           this.fetchProjectData(currentProjKey)
         );
-
       }
     );
   };
@@ -483,7 +489,7 @@ class App extends Component {
     };
 
     return (
-      <div>
+      <div key="hz">
         {epic.issues && epic.issues.length ? (
           <div>
             {showEpicEstimate(epic)}
@@ -502,6 +508,7 @@ class App extends Component {
                     <div style={{ marginLeft: 16, fontSize: 14 }}>
                       {issue.fields.subtasks.map(task => (
                         <Issue
+                          key={task.id}
                           issue={task}
                           subtask
                           onClick={inspectedObject =>
@@ -552,7 +559,7 @@ class App extends Component {
             onClick={exec(
               // this.updState({ status: 'fetching...' }),
               this.fetchProjectData(proj.key),
-              // this.updState({ inspectedObject: proj })
+              this.updState({ inspectedObject: proj })
             )}
             style={{
               margin: 8,
@@ -589,6 +596,10 @@ class App extends Component {
     return (
       <Contaner>
         {epics.map(epic => this.renderIssues(epic.issues, epic))}
+        {this.renderIssues(currentProject.boards[0].backlog.issues, {
+          issues: currentProject.boards[0].backlog,
+          name: 'Backlog',
+        })}
       </Contaner>
     );
   };

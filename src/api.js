@@ -91,7 +91,8 @@ export const getIssue = issueId =>
 export const getProject = projId =>
   proxiRequest(`/rest/api/2/project/${projId}`);
 
-const queryContributors = `
+export const getContributors = () => {
+  const queryContributors = `
   query getRates{
     contributors: allContributors {
       key
@@ -99,28 +100,5 @@ const queryContributors = `
     }
   }
   `;
-
-export const getContributors = () => {
-  return client
-    .request(queryContributors)
-      .then(res => res.contributors)
-    // .then(
-    //   res => (res.data.status === 'Ok' ? res.data.response : res.data.status)
-    // )
-    // .then(response => {
-    //   try {
-    //     const data = JSON.parse(response);
-    //     logRequestFn({
-    //       url,
-    //       status: 'Ok',
-    //       time: 0,
-    //       data,
-    //     });
-    //     return data;
-    //   } catch (error) {
-    //     return {
-    //       error,
-    //     };
-    //   }
-    // });
+  return client.request(queryContributors).then(res => res.contributors);
 };
