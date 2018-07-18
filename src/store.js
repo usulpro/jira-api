@@ -11,14 +11,14 @@ import {
 } from './api';
 import { storage } from './utils/localStorage';
 
-const localData = storage('skipp_db');
+// const localData = storage('skipp_db');
+const localDbMap = {};
+const projectsData = storage('skipp_projects');
 
-export const isDataStored = () => !!localData.get();
+// export const isDataStored = () => !!localData.get();
 
 let boardsCollection = [];
 let projectsCollection = [];
-let issuesCollection = [];
-let epicsCollection = [];
 
 export const INSPECT_TYPE = {
   PROJECT: 'PROJECT',
@@ -72,25 +72,26 @@ const multiFetch = async fetchList =>
   await Promise.all(fetchList.map(async item => item.put(await item.fetch())));
 
 export const refetchData = async () => {
-  localData.clear();
-  return await fetchInitData();
+  // localData.clear();
+  // return await fetchInitData();
+  throw 'refetchData нужно переписать';
 };
 
-export const fetchInitData = async () => {
-  const local = localData.get();
-  console.log('​exportfetchInitData -> local', local);
-  if (local) return local;
+export const fetchProjects = async () => {
+  const local = projectsData.get();
+  if (local) {
+    projectsCollection = local.projectsCollection;
+    boardsCollection = local.boardsCollection;
+    return local;
+  }
 
   const { boards, projects } = await getAllBoards().then(
     logger.info('getAllBoards')
   );
   boardsCollection = boards;
 
-  console.log('​exportfetchInitData -> projects', projects);
-
-
   projectsCollection = await multiFetch(
-    projects.filter(pr => pr.projectId === 10021).map(proj => ({
+    projects.map(proj => ({
       fetch: () => getProject(proj.projectId),
       put: resp => ({
         ...resp,
@@ -102,10 +103,41 @@ export const fetchInitData = async () => {
     }))
   );
 
+  console.log('​exportfetchProjects -> projectsCollection', projectsCollection);
+
+  projectsData.set({
+    boardsCollection,
+    projectsCollection,
+  });
+
+  return {
+    boardsCollection,
+    projectsCollection,
+  };
+};
+
+export const fetchProjectData = async key => {
+  const localProjectData = storage(key);
+  if (localProjectData.get()) {
+    const local = localProjectData.get();
+    if (local) return {
+      boardsCollection,
+      projectsCollection,
+      epicsCollection: local.epicsCollection,
+      issuesCollection: local.issuesCollection,
+    };
+  } else {
+    localDbMap[key] = localProjectData;
+  }
+
+  const boardId = projectsCollection.find(proj => proj.key === key).boards[0].id;
+
+  let issuesCollection = [];
+  let epicsCollection = [];
 
   // epicsCollection =
   await multiFetch(
-    boardsCollection.map(board => ({
+    boardsCollection.filter(brd => brd.id === boardId).map(board => ({
       fetch: () => getBoardEpics(board.id),
       put: epics => {
         board.epics = epics;
@@ -115,9 +147,11 @@ export const fetchInitData = async () => {
     }))
   );
 
+  console.log('​boardsCollection', boardsCollection);
+
   // issuesCollection =
   await multiFetch(
-    boardsCollection.map(board => ({
+    boardsCollection.filter(brd => brd.id === boardId).map(board => ({
       fetch: () => getBoardIssues(board.id),
       put: issues => {
         board.issues = issues;
@@ -157,12 +191,17 @@ export const fetchInitData = async () => {
     });
   });
 
-  // localData.set({
-  //   boardsCollection,
-  //   projectsCollection,
-  //   epicsCollection,
-  //   issuesCollection,
-  // });
+  projectsData.set({
+    boardsCollection,
+    projectsCollection,
+  });
+
+  localProjectData.set({
+    epicsCollection,
+    issuesCollection,
+  });
+
+  localDbMap[key] = localProjectData;
 
   return {
     boardsCollection,

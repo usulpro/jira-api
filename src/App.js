@@ -16,7 +16,9 @@ import {
 
 import {
   fetchInitData,
-  isDataStored,
+  fetchProjects,
+  fetchProjectData,
+  // isDataStored,
   refetchData,
   sortProjByIssues,
   contributorRates,
@@ -198,7 +200,7 @@ class App extends Component {
     epics: null,
     backlog: null,
     status: 'loading...',
-    isStored: isDataStored(),
+    // isStored: isDataStored(),
     inspectedObject: undefined,
     currentProject: undefined,
   };
@@ -207,22 +209,28 @@ class App extends Component {
   async componentDidMount() {
     this.log({ text: 'App did mount' });
     onProxiRequest(this.fetchLog);
-    const {
-      boardsCollection,
-      projectsCollection,
-      epicsCollection,
-      issuesCollection,
-    } = await fetchInitData();
+    const { boardsCollection, projectsCollection } = await fetchProjects();
 
-    const projects = projectsCollection.sort(sortProjByIssues);
-    // boardsCollection.forEach(board => this.addUserRates(board.issues));
+    const projects = projectsCollection; // .sort(sortProjByIssues);
 
-    this.setState({
-      projects,
-      status: 'ready',
-      isStored: isDataStored(),
-      currentProject: projects[0],
-    });
+    this.setState(
+      {
+        projects,
+        status: 'ready',
+        // isStored: isDataStored(),
+        currentProject: projects.find(proj => proj.key === 'EWPH'),
+      },
+      async () => {
+        const { projectsCollection } = await fetchProjectData(
+          this.state.currentProject.key
+        );
+        this.setState({
+          projects: projectsCollection,
+          status: 'ready',
+          currentProject: projects.find(proj => proj.key === 'EWPH'),
+        });
+      }
+    );
   }
 
   fetchLog = info =>
@@ -246,7 +254,7 @@ class App extends Component {
         this.setState({
           projects,
           status: 'ready',
-          isStored: isDataStored(),
+          // isStored: isDataStored(),
           currentProject: projects[0],
         });
         this.log({ text: 'refetching done' });
