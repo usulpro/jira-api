@@ -228,13 +228,14 @@ class App extends Component {
   fetchLog = info =>
     this.log({ text: `fetching ${info.url}`, state: info.data });
 
-  fetchProjectData = key => async () => {
+  fetchProjectData = (key, finalState) => async () => {
     const { projectsCollection } = await fetchProjectData(key);
     this.setState(
       {
         projects: projectsCollection,
-        status: 'ready',
-        currentProject: this.state.projects.find(proj => proj.key === key),
+        status: `${key} is ready`,
+        currentProject: projectsCollection.find(proj => proj.key === key),
+        ...finalState,
       },
       () =>
         this.log({ text: 'fetchProjectData', state: { projectsCollection } })
@@ -272,19 +273,6 @@ class App extends Component {
       }
     );
   };
-
-  // addUserRates = issues => {
-  //   issues.forEach(({ assignee }) => {
-  //     if (!assignee || assignee.rate) return;
-  //     let rate;
-  //     try {
-  //       rate = contributorRates(assignee.key);
-  //     } catch (error) {
-  //       rate = 'ОШИБКА РЕЙТ ПОЛЬЗОВАТЕЛЯ НЕ ЗАДАН';
-  //     }
-  //     Object.assign(assignee, { rate });
-  //   });
-  // };
 
   updIssue = issueId => async ev => {
     const issue = await getIssue(issueId);
@@ -541,18 +529,21 @@ class App extends Component {
     return (
       <header className="App-header">
         <h2 className="App-title">Welcome to Skipp API</h2>
-        {isStored ? (
-          <p className="App-status">
-            data stored locally{' '}
-            <button className="Btn-refetch" onClick={this.refetchData}>
-              refetch
-            </button>{' '}
-          </p>
-        ) : (
-          <p className="App-status">{status}</p>
-        )}
+        <p className="App-status">{status}</p>
         <input className="App-search" type="text" placeholder="search..." />
       </header>
+    );
+  };
+
+  handleProjSelect = proj => () => {
+    const key = proj.key;
+    this.setState(
+      {
+        status: `fetching for ${key}...`,
+        inspectedObject: undefined,
+        currentProject: undefined,
+      },
+      this.fetchProjectData(proj.key, { inspectedObject: proj })
     );
   };
 
@@ -562,11 +553,7 @@ class App extends Component {
         this.state.projects.map(proj => (
           <button
             key={proj.id}
-            onClick={exec(
-              // this.updState({ status: 'fetching...' }),
-              this.fetchProjectData(proj.key),
-              this.updState({ inspectedObject: proj })
-            )}
+            onClick={this.handleProjSelect(proj)}
             style={{
               margin: 8,
               border: 'solid 1px rgb(50,50,50)',
