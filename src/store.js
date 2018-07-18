@@ -12,7 +12,6 @@ import {
 import { storage } from './utils/localStorage';
 
 // const localData = storage('skipp_db');
-const localDbMap = {};
 const projectsData = storage('skipp_projects');
 
 // export const isDataStored = () => !!localData.get();
@@ -126,8 +125,6 @@ export const fetchProjectData = async key => {
       epicsCollection: local.epicsCollection,
       issuesCollection: local.issuesCollection,
     };
-  } else {
-    localDbMap[key] = localProjectData;
   }
 
   const boardId = projectsCollection.find(proj => proj.key === key).boards[0].id;
@@ -201,7 +198,6 @@ export const fetchProjectData = async key => {
     issuesCollection,
   });
 
-  localDbMap[key] = localProjectData;
 
   return {
     boardsCollection,

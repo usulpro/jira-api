@@ -29,7 +29,7 @@ import styled from 'react-emotion';
 
 // onProxiRequest(console.log);
 
-const exec = (...fn) => fn.forEach(f => f());
+const exec = (...fn) => () => fn.forEach(f => f());
 
 const UserAva = ({ user, onClick }) => {
   if (!user) {
@@ -216,25 +216,25 @@ class App extends Component {
     this.setState(
       {
         projects,
-        status: 'ready',
+        status: 'fetching...',
         // isStored: isDataStored(),
         currentProject: projects.find(proj => proj.key === 'EWPH'),
       },
-      async () => {
-        const { projectsCollection } = await fetchProjectData(
-          this.state.currentProject.key
-        );
-        this.setState({
-          projects: projectsCollection,
-          status: 'ready',
-          currentProject: projects.find(proj => proj.key === 'EWPH'),
-        });
-      }
+      this.fetchProjectData('EWPH')
     );
   }
 
   fetchLog = info =>
     this.log({ text: `fetching ${info.url}`, state: info.data });
+
+  fetchProjectData = key => async () => {
+    const { projectsCollection } = await fetchProjectData(key);
+    this.setState({
+      projects: projectsCollection,
+      status: 'ready',
+      currentProject: this.state.projects.find(proj => proj.key === key),
+    });
+  };
 
   refetchData = async () => {
     this.setState(
@@ -548,10 +548,11 @@ class App extends Component {
         this.state.projects.map(proj => (
           <button
             key={proj.id}
-            onClick={this.updState({
-              inspectedObject: proj,
-              currentProject: proj,
-            })}
+            onClick={exec(
+              this.updState({ status: 'fetching' }),
+              this.fetchProjectData(proj.key),
+              this.updState({ inspectedObject: proj })
+            )}
             style={{
               margin: 8,
               border: 'solid 1px rgb(50,50,50)',
