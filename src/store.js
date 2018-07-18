@@ -190,6 +190,9 @@ export const fetchProjectData = async key => {
     issuesCollection.map(issue => ({
       fetch: () => getIssue(issue.id),
       put: res => {
+        if (res.fields.resolution && res.fields.resolution.name !== 'Done') {
+          res.disabled = true;
+        }
         Object.assign(issue, { ...res });
       },
     }))

@@ -68,6 +68,7 @@ const Issue = ({
   calcEstimate = () => null,
   onClick = () => {},
 }) => {
+  if (issue.disabled) return null
   const Contaner = styled('div')(
     {
       padding: 4,
@@ -424,7 +425,7 @@ class App extends Component {
     };
 
     const estimateIssue = issue => {
-      if (!issue || !issue.fields) return null;
+      if (!issue || !issue.fields || issue.disabled) return null;
       const hasSubtasks = issue.fields.subtasks && issue.fields.subtasks.length;
       if (!hasSubtasks) {
         return estimateTask(issue);
@@ -446,7 +447,7 @@ class App extends Component {
     };
 
     const estimateEpic = epic => {
-      const issuesEst = epic.issues.map(estimateIssue);
+      const issuesEst = epic.issues.map(estimateIssue).filter(Boolean);
       console.log('​issuesEst', issuesEst);
       const epicEst = issuesEst.reduce(
         (sum, est) => ({
@@ -488,7 +489,7 @@ class App extends Component {
           <div>
             {showEpicEstimate(epic)}
             <div>
-              {epic.issues.map(issue => (
+              {epic.issues.filter(issue => !issue.disabled).map(issue => (
                 <Contaner key={issue.id}>
                   <Issue
                     issue={issue}
