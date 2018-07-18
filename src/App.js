@@ -441,7 +441,13 @@ class App extends Component {
       if (!hasSubtasks) {
         return estimateTask(issue);
       }
-      const story = issue.fields.subtasks.reduce(reduceSubtasks, {});
+      const story = issue.fields.subtasks.reduce(reduceSubtasks, {
+        sum: 0,
+        seconds: 0,
+        hasCostErrors: false,
+        statusName: '',
+        progressList: [],
+      });
       story.progress =
         story.progressList.reduce(
           (sum, taskEst) => sum + taskEst.progress * taskEst.seconds,

@@ -75,13 +75,13 @@ export const refetchData = async () => {
 };
 
 export const fetchProjects = async () => {
-  const local = projectsData.get();
-  if (local) {
-    projectsCollection = local.projectsCollection;
-    boardsCollection = local.boardsCollection;
-    contributorsCollection = local.contributorsCollection;
-    return local;
-  }
+  // const local = projectsData.get();
+  // if (local) {
+  //   projectsCollection = local.projectsCollection;
+  //   boardsCollection = local.boardsCollection;
+  //   contributorsCollection = local.contributorsCollection;
+  //   return local;
+  // }
   contributorsCollection = await getContributors();
   const { boards, projects } = await getAllBoards().then(
     logger.info('getAllBoards')
@@ -103,11 +103,11 @@ export const fetchProjects = async () => {
 
   console.log('​exportfetchProjects -> projectsCollection', projectsCollection);
 
-  projectsData.set({
-    boardsCollection,
-    projectsCollection,
-    contributorsCollection,
-  });
+  // projectsData.set({
+  //   boardsCollection,
+  //   projectsCollection,
+  //   contributorsCollection,
+  // });
 
   return {
     boardsCollection,
@@ -227,15 +227,15 @@ export const fetchProjectData = async key => {
   console.log('boardsCollection', boardsCollection);
   console.log('projectsCollection', projectsCollection);
 
-  projectsData.set({
-    boardsCollection,
-    projectsCollection,
-  });
+  // projectsData.set({
+  //   boardsCollection,
+  //   projectsCollection,
+  // });
 
-  localProjectData.set({
-    epicsCollection,
-    issuesCollection,
-  });
+  // localProjectData.set({
+  //   epicsCollection,
+  //   issuesCollection,
+  // });
 
   return {
     boardsCollection,
