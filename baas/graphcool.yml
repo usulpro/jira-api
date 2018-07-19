@@ -10,6 +10,11 @@ functions:
     schema: src/apiPr.graphql
     handler:
       code: src/apiPr.js
+  makePayment:
+    type: resolver
+    schema: src/payments/makePayment.graphql
+    handler:
+      code: src/payments/makePayment.js
 permissions:
 - operation: File.read
 - operation: File.create
@@ -20,4 +25,5 @@ permissions:
 - operation: User.update
 - operation: User.delete
 - operation: Contributor.read
+- operation: Issue.read
 rootTokens: []

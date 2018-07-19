@@ -4,7 +4,13 @@ const endpoint = 'https://api.graph.cool/simple/v1/cjjitqtxu10pn0118qlejvj0y';
 const client = new GraphQLClient(endpoint, { headers: {} });
 export const projectBase = 'https://skippdev.atlassian.net';
 
-const query = `
+let logRequestFn = () => {};
+export const onProxiRequest = cb => {
+  logRequestFn = cb;
+};
+
+export const proxiRequest = url => {
+  const query = `
   query get($url: String){
     data: apiv2(url: $url) {
       status
@@ -12,13 +18,6 @@ const query = `
     }
   }
   `;
-
-let logRequestFn = () => {};
-export const onProxiRequest = cb => {
-  logRequestFn = cb;
-};
-
-export const proxiRequest = url => {
   return client
     .request(query, { url })
     .then(
@@ -101,4 +100,30 @@ export const getContributors = () => {
   }
   `;
   return client.request(queryContributors).then(res => res.contributors);
+};
+
+export const getStoredIssues = () => {
+  const queryIssues = `
+  query Info {
+    issues: allIssues {
+      key
+      paymentAmount
+      paymentDate
+      paymentCurrency
+    }
+  }
+  `;
+  return client.request(queryIssues).then(res => res.issues);
+};
+
+export const makePayment = paymentList => {
+  const mutation = `
+    mutation makePayment($paymentList: Json){
+      issues: makePayment(paymentList: $paymentList) {
+        status
+        issues
+      }
+    }
+  `;
+  return client.request(mutation, { paymentList }).then(res => res.issues.issues);
 };

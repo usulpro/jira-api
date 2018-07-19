@@ -1,0 +1,8 @@
+type makePaymentPayload {
+  issues: Json
+  status: String
+}
+
+extend type Mutation {
+  makePayment(paymentList: Json): makePaymentPayload
+}

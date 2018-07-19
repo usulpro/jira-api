@@ -15,6 +15,24 @@ type Contributor @model {
   rate: Int!
 }
 
+type Issue @model {
+  id: ID! @isUnique
+  key: String! @isUnique
+  paymentAmount: Int
+  paymentCurrency: String
+  paymentDate: DateTime
+}
+
+type PaymentLog @model {
+  id: ID! @isUnique
+  issueKey: String!
+  paymentAmount: Int!
+  paymentCurrency: String!
+  paymentDate: DateTime!
+  paymentReason: String
+  paymentInitiator: String
+}
+
 type User @model {
   createdAt: DateTime!
   id: ID! @isUnique

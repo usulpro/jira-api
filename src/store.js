@@ -9,6 +9,8 @@ import {
   getBacklog,
   getIssue,
   getContributors,
+  getStoredIssues,
+  makePayment,
 } from './api';
 import { storage } from './utils/localStorage';
 
@@ -19,6 +21,7 @@ const localProjMap = {};
 
 let boardsCollection = [];
 let projectsCollection = [];
+let storedIssuesCollection = [];
 
 export const INSPECT_TYPE = {
   PROJECT: 'PROJECT',
@@ -83,6 +86,7 @@ export const fetchProjects = async () => {
   //   return local;
   // }
   contributorsCollection = await getContributors();
+  storedIssuesCollection = await getStoredIssues();
   const { boards, projects } = await getAllBoards().then(
     logger.info('getAllBoards')
   );
@@ -160,8 +164,6 @@ export const fetchProjectData = async key => {
     }))
   );
 
-
-
   // issuesCollection =
   await multiFetch(
     boardsCollection.filter(brd => brd.id === boardId).map(board => ({
@@ -192,6 +194,16 @@ export const fetchProjectData = async key => {
       put: res => {
         if (res.fields.resolution && res.fields.resolution.name !== 'Done') {
           res.disabled = true;
+        }
+
+        const payedIssue = storedIssuesCollection.find(
+          iss => iss.key === res.key
+        );
+        if (payedIssue) {
+          console.log('​payedIssue', payedIssue);
+          res.paymentAmount = payedIssue.paymentAmount;
+          res.paymentCurrency = payedIssue.paymentCurrency;
+          res.paymentDate = payedIssue.paymentDate;
         }
         Object.assign(issue, { ...res });
       },
@@ -254,4 +266,20 @@ export const sortProjByIssues = (pr1, pr2) => {
   const iss1 = brd1.issues.length;
   const iss2 = brd2.issues.length;
   return iss2 - iss1;
+};
+
+export const makeIssuePayment = (issue, estimateFn, key) => {
+  const est = estimateFn(issue);
+  const paymentList = [
+    {
+      key: issue.key,
+      paymentAmount: est.cost,
+      paymentCurrency: 'rub',
+      paymentDate: new Date().toISOString(),
+    },
+  ];
+  return makePayment(paymentList).then(issues => {
+    storedIssuesCollection = issues;
+    return fetchProjectData(key);
+  });
 };

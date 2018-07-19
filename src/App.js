@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 import SplitPane from 'react-split-pane';
+import styled from 'react-emotion';
+
 import './App.css';
 import {
   getBoard,
@@ -11,7 +13,6 @@ import {
   getBacklog,
   getIssue,
   onProxiRequest,
-  projectBase,
 } from './api';
 
 import {
@@ -22,178 +23,15 @@ import {
   refetchData,
   sortProjByIssues,
   contributorRates,
+  makeIssuePayment,
 } from './store';
 import Inspector from './components/inspector';
 import Console from './components/console';
-import styled from 'react-emotion';
+import { Issue, sortIssues } from './ui/Issue';
 
 // onProxiRequest(console.log);
 
 const exec = (...fn) => () => fn.forEach(f => f());
-
-const UserAva = ({ user, onClick }) => {
-  if (!user) {
-    const NoAva = styled('div')`
-      width: 16px;
-      height: 16px;
-      border-radius: 16px;
-      background-color: #ececec;
-      border: 1px solid #cecece;
-    `;
-
-    return <NoAva title="Исполнитель не назначен" />;
-  }
-
-  const Ava = styled('img')`
-    width: 16px;
-    height: 16px;
-    border-radius: 16px;
-    cursor: pointer;
-    &:hover: border: 1px solid red;
-  `;
-
-  return (
-    <Ava
-      src={user.avatarUrls['16x16']}
-      alt="ava"
-      title={user.displayName}
-      onClick={onClick}
-    />
-  );
-};
-
-const Issue = ({
-  issue,
-  subtask,
-  calcEstimate = () => null,
-  onClick = () => {},
-}) => {
-  if (issue.disabled) return null
-  const Contaner = styled('div')(
-    {
-      padding: 4,
-      margin: 2,
-      width: 'auto',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    props => ({
-      opacity: props.subtask ? 0.7 : 0.8,
-    })
-  );
-  const Title = styled('h5')`
-    margin: 8px;
-    cursor: pointer;
-  `;
-
-  const keyBadge = ({ key } = {}) => {
-    if (!key) return null;
-    const Key = styled('a')`
-      color: hsl(0, 0%, 34%);
-      margin: 0px 16px;
-      font-size: 10px;
-      float: right;
-      text-decoration: none;
-      border: 1px solid #9e9e9e;
-      padding: 2px;
-      border-radius: 2px;
-    `;
-    const link = `${projectBase}/browse/${key}`;
-    return (
-      <Key href={link} target="_blank">
-        {key}
-      </Key>
-    );
-  };
-
-  const estimation = est => {
-    if (!est) return null;
-    const Label = styled('span')`
-      opacity: 0.8;
-      font-size: 12px;
-    `;
-
-    const StatusBadge = styled('span')`
-      font-size: 10px;
-      border: 1px solid #cacaca;
-      background-color: #e8e8e8;
-      border-radius: 2px;
-      padding: 2px;
-      margin: 0px 4px;
-      color: #3a3a3a;
-    `;
-
-    const Value = styled('span')`
-      font-size: 12px;
-      font-weight: 600;
-    `;
-
-    if (est.error)
-      return (
-        <div title={est.error}>
-          <Label>Ошибка!</Label>
-        </div>
-      );
-    const hours = Math.round((4 * est.seconds) / 60 / 60) / 4;
-    const tip = `прогресс: ${Math.round(100 * est.progress)}%`;
-    const costString = `стоимость ${Math.round(est.cost)}р ${
-      est.hasCostErrors ? '<- ошибка!' : ''
-    }`;
-    return (
-      <div>
-        <StatusBadge title={tip}>
-          {est.statusName}
-          {` (${Math.round(est.progress * 100)}%)`}
-        </StatusBadge>
-        <Label>Оценка:</Label>{' '}
-        <Value title={costString}>{hours || 'нет оценки'}</Value>
-      </div>
-    );
-  };
-
-  const totalEstimation = est => {
-    if (!est.cost) return null;
-    const Card = styled('div')`
-      font-size: 12px;
-      margin: 0px 80px;
-      color: #313131;
-      background-color: #ececec;
-      padding: 2px 10px;
-      border-radius: 12px;
-      flex-grow: 1;
-      text-align: center;
-    `;
-    const costString = `∑ ${Math.round(est.cost)} р.`;
-    const errorString = `${est.hasCostErrors ? ' (!!!)' : ''}`;
-    return (
-      <Card title={est.hasCostErrors ? 'есть ошибки' : ''}>
-        {costString}
-        {errorString}
-      </Card>
-    );
-  };
-
-  const SpcFx = styled('div')`
-    width: 1px;
-    flex-grow: 1;
-  `;
-
-  return (
-    <Contaner subtask={subtask}>
-      {subtask && (
-        <UserAva
-          user={issue.fields.assignee}
-          onClick={() => onClick(issue.fields.assignee)}
-        />
-      )}
-      <Title onClick={() => onClick(issue)}>{issue.fields.summary}</Title>
-      {!subtask ? totalEstimation(calcEstimate(issue)) || <SpcFx /> : <SpcFx />}
-      {estimation(calcEstimate(issue))}
-      {keyBadge(issue)}
-    </Contaner>
-  );
-};
 
 class App extends Component {
   state = {
@@ -358,11 +196,6 @@ class App extends Component {
   };
 
   renderIssues = (issues, epic) => {
-    // const epic = {
-    //   issues,
-    //   estimate: 0,
-    // };
-
     const Contaner = styled('div')({
       border: '1px solid rgb(150, 150, 150)',
       borderRadius: 2,
@@ -439,16 +272,19 @@ class App extends Component {
       });
       story.progress =
         story.progressList.reduce(
-          (sum, taskEst) => sum + taskEst.progress * taskEst.seconds,
+          (sum, taskEst) =>
+            (sum || 0) + (taskEst.progress * taskEst.seconds || 0),
           0
         ) /
-        story.progressList.reduce((sum, taskEst) => sum + taskEst.seconds, 0);
+        story.progressList.reduce(
+          (sum, taskEst) => (sum || 0) + (taskEst.seconds || 0),
+          0
+        );
       return story;
     };
 
     const estimateEpic = epic => {
       const issuesEst = epic.issues.map(estimateIssue).filter(Boolean);
-      console.log('​issuesEst', issuesEst);
       const epicEst = issuesEst.reduce(
         (sum, est) => ({
           cost: (sum.cost || 0) + (est.cost || 0),
@@ -457,7 +293,6 @@ class App extends Component {
         }),
         { cost: 0, seconds: 0, hasCostErrors: false }
       );
-      console.log('​epicEst', epicEst);
       return epicEst;
     };
 
@@ -483,6 +318,29 @@ class App extends Component {
       );
     };
 
+    const onTaskPayment = (issue, estimateIssue) => () => {
+      const key = this.state.currentProject.key;
+      this.setState(
+        {
+          status: `fetching for ${key}...`,
+          inspectedObject: undefined,
+          currentProject: undefined,
+        },
+        async () => {
+          const { projectsCollection } = await makeIssuePayment(
+            issue,
+            estimateIssue,
+            key
+          );
+          this.setState({
+            projects: projectsCollection,
+            status: `${key} is ready`,
+            currentProject: projectsCollection.find(proj => proj.key === key),
+          });
+        }
+      );
+    };
+
     return (
       <div key="hz">
         {epic.issues && epic.issues.length ? (
@@ -501,7 +359,7 @@ class App extends Component {
 
                   {issue.fields.subtasks.length ? (
                     <div style={{ marginLeft: 16, fontSize: 14 }}>
-                      {issue.fields.subtasks.map(task => (
+                      {sortIssues(issue.fields.subtasks, estimateIssue).map(task => (
                         <Issue
                           key={task.id}
                           issue={task}
@@ -510,6 +368,7 @@ class App extends Component {
                             this.setState({ inspectedObject })
                           }
                           calcEstimate={estimateIssue}
+                          onMakePayment={onTaskPayment(task, estimateIssue)}
                         />
                       ))}
                     </div>
