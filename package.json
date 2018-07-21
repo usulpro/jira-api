@@ -19,7 +19,7 @@
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
     "cool": "cd baas && gcf deploy",
-    "predeploy": "npm run build",
+    "predeploy": "npm version patch -m \"Deploy %s to gh-pages\" && npm run build",
     "deploy": "gh-pages -d build"
   },
   "devDependencies": {
