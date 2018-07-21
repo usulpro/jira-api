@@ -52,15 +52,15 @@ class App extends Component {
     const { boardsCollection, projectsCollection } = await fetchProjects();
 
     const projects = projectsCollection; // .sort(sortProjByIssues);
-
+    const currentProjKey = 'EWPH';
     this.setState(
       {
         projects,
-        status: 'fetching...',
+        status: `fetching for ${currentProjKey}...`,
         isStored: true,
-        currentProject: projects.find(proj => proj.key === 'SAD'),
+        currentProject: projects.find(proj => proj.key === currentProjKey),
       },
-      this.fetchProjectData('SAD')
+      this.fetchProjectData(currentProjKey)
     );
   }
 
