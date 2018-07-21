@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import SplitPane from 'react-split-pane';
 import styled from 'react-emotion';
 
+import appPackage from '../package.json';
 import './App.css';
 import {
   getBoard,
@@ -386,9 +387,12 @@ class App extends Component {
 
   renderTitle = () => {
     const { status, isStored } = this.state;
+    const Ver = styled('span')`
+      opacity: 0.8;
+    `
     return (
       <header className="App-header">
-        <h2 className="App-title">Welcome to Skipp API</h2>
+        <h2 className="App-title">Welcome to Skipp API <Ver>{`ver ${appPackage.version}`}</Ver></h2>
         <p className="App-status">{status}</p>
         <input className="App-search" type="text" placeholder="search..." />
       </header>
