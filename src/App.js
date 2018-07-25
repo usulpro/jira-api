@@ -356,6 +356,7 @@ class App extends Component {
                       this.setState({ inspectedObject })
                     }
                     calcEstimate={estimateIssue}
+                    onMakePayment={onTaskPayment(issue, estimateIssue)}
                   />
 
                   {issue.fields.subtasks.length ? (
